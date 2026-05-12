@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<title>DNR Control Center - EDSP Brasil</title>
+<script src="https://d1hilrkz3ka39e.cloudfront.net/plotly/plotly-2.27.0.min.js"></script><style id="plotly.js-style-global"></style>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,system-ui,sans-serif;background:#F0F2F5;color:#2C3744;font-size:13px}
+.header{background:linear-gradient(135deg,#1E3A5F 0%,#2C5282 100%);color:white;padding:18px 25px;box-shadow:0 2px 10px rgba(0,0,0,0.15);position:sticky;top:0;z-index:100}
+.header.partner-mode{background:linear-gradient(135deg,#C05621 0%,#DD6B20 100%)}
+.header-content{display:flex;justify-content:space-between;align-items:center;max-width:1600px;margin:0 auto;flex-wrap:wrap;gap:15px}
+.logo{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+.logo-badge{background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mode-toggle{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;transition:all 0.2s}
+.mode-toggle:hover{background:rgba(255,255,255,0.25)}
+.btn{background:#2C5282;color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-weight:600;font-size:12px;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#1E3A5F;transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,0.15)}
+.btn-success{background:#2ECC71}
+.btn-success:hover{background:#27AE60}
+.btn-warning{background:#E67E22}
+.btn-warning:hover{background:#D35400}
+.btn-danger{background:#E74C3C}
+.btn-secondary{background:#95A5A6}
+.btn-sm{padding:5px 10px;font-size:11px}
+.tabs{background:white;border-bottom:2px solid #E1E6ED;padding:0 25px;display:flex;gap:2px;overflow-x:auto;position:sticky;top:70px;z-index:99}
+.tab{padding:14px 20px;cursor:pointer;border:none;background:none;font-weight:600;color:#5C7A99;border-bottom:3px solid transparent;white-space:nowrap;font-size:13px;transition:all 0.2s}
+.tab:hover{color:#2C5282;background:#F7FAFC}
+.tab.active{color:#2C5282;border-bottom-color:#2C5282;background:#EBF4FB}
+.container{max-width:1600px;margin:0 auto;padding:25px}
+.view{display:none}
+.view.active{display:block}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-bottom:25px}
+.kpi-card{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid;transition:transform 0.2s}
+.kpi-card:hover{transform:translateY(-3px);box-shadow:0 5px 15px rgba(0,0,0,0.1)}
+.kpi-label{font-size:11px;color:#5C7A99;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.kpi-value{font-size:28px;font-weight:700;color:#2C3744}
+.kpi-sub{font-size:11px;color:#5C7A99;margin-top:4px}
+.panel{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px}
+.panel-title{font-size:15px;font-weight:700;color:#2C3744;margin-bottom:15px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.panel-title-text{display:flex;align-items:center;gap:8px}
+.toolbar{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap;align-items:center}
+.search-box{flex:1;min-width:200px;padding:8px 12px;border:2px solid #E1E6ED;border-radius:7px;font-size:13px;transition:border 0.2s}
+.search-box:focus{outline:none;border-color:#2C5282}
+.filter-select{padding:8px 12px;border:2px solid #E1E6ED;border-radius:7px;font-size:13px;background:white;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#2C5282;color:white;padding:10px 8px;text-align:left;font-weight:600;position:sticky;top:0;font-size:11px;text-transform:uppercase;letter-spacing:0.3px}
+td{padding:8px;border-bottom:1px solid #E8ECEF;vertical-align:middle}
+tr:hover{background:#F7FAFC}
+tr.overdue{background:#FEF2F2}
+tr.overdue:hover{background:#FEE2E2}
+.editable{background:transparent;border:1px solid transparent;padding:4px 6px;border-radius:4px;width:100%;font-size:12px;min-width:80px}
+.editable:hover{border-color:#E1E6ED;background:#F7FAFC}
+.editable:focus{outline:none;border-color:#2C5282;background:white}
+.table-wrap{overflow-x:auto;max-height:600px;overflow-y:auto}
+.status-badge{display:inline-block;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px}
+.status-waiting-edsp{background:#FFF3CD;color:#856404}
+.status-waiting-cta{background:#D1ECF1;color:#0C5460}
+.status-done{background:#D4EDDA;color:#155724}
+.status-overdue{background:#F8D7DA;color:#721C24}
+.resp-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.resp-edsp{background:#FED7AA;color:#9A3412}
+.resp-amzl{background:#BFDBFE;color:#1E40AF}
+.expand-btn{cursor:pointer;background:none;border:none;font-size:14px;color:#2C5282;padding:4px 8px;border-radius:4px;transition:all 0.2s}
+.expand-btn:hover{background:#EBF4FB}
+.detail-row{background:#F7FAFC;padding:0}
+.detail-content{padding:20px;display:none}
+.detail-content.open{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.detail-section{background:white;border-radius:10px;padding:18px;border:2px solid}
+.section-edsp{border-color:#DD6B20}
+.section-cta{border-color:#2C5282}
+.section-title{font-weight:700;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-edsp .section-title{color:#C05621}
+.section-cta .section-title{color:#2C5282}
+.form-row{margin-bottom:12px}
+.form-label{display:block;font-size:11px;font-weight:600;color:#5C7A99;margin-bottom:4px;text-transform:uppercase}
+.form-input,.form-textarea,.form-select{width:100%;padding:8px 10px;border:2px solid #E1E6ED;border-radius:6px;font-size:12px;font-family:inherit;transition:border 0.2s}
+.form-textarea{min-height:70px;resize:vertical}
+.form-input:focus,.form-textarea:focus,.form-select:focus{outline:none;border-color:#2C5282}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.check-item{background:#F7FAFC;padding:8px 12px;border-radius:6px;border:2px solid #E1E6ED;cursor:pointer;font-size:11px;transition:all 0.2s;display:flex;justify-content:space-between;align-items:center}
+.check-item.ok{background:#D4EDDA;border-color:#27AE60;color:#155724}
+.check-item.nok{background:#F8D7DA;border-color:#E74C3C;color:#721C24}
+.timeline{border-left:3px solid #E1E6ED;padding-left:15px;margin-top:12px;max-height:150px;overflow-y:auto}
+.timeline-item{position:relative;padding:8px 0;font-size:11px}
+.timeline-item::before{content:'';position:absolute;left:-19px;top:12px;width:10px;height:10px;border-radius:50%;background:#2C5282}
+.timeline-time{color:#5C7A99;font-size:10px}
+.upload-zone{border:2px dashed #DD6B20;border-radius:8px;padding:15px;text-align:center;cursor:pointer;background:#FFF5EB;transition:all 0.2s;margin-top:10px}
+.upload-zone:hover{background:#FED7AA}
+.upload-zone input{display:none}
+.image-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.image-preview img{width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid #E1E6ED}
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:20px}
+.chart-box{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.chart-title{font-size:14px;font-weight:700;color:#2C3744;margin-bottom:12px}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1000;justify-content:center;align-items:center}
+.modal.active{display:flex}
+.modal-content{background:white;border-radius:14px;padding:30px;max-width:700px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.share-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:15px}
+.share-option{padding:18px;border:2px solid #E1E6ED;border-radius:10px;cursor:pointer;text-align:center;transition:all 0.2s}
+.share-option:hover{border-color:#2C5282;background:#EBF4FB;transform:translateY(-2px)}
+.share-icon{font-size:32px;margin-bottom:8px}
+.share-label{font-weight:700;font-size:13px;color:#2C3744}
+.share-desc{font-size:11px;color:#5C7A99;margin-top:4px}
+.notification{position:fixed;top:90px;right:20px;background:white;padding:15px 20px;border-radius:10px;box-shadow:0 5px 20px rgba(0,0,0,0.2);z-index:2000;border-left:4px solid #2ECC71;animation:slideIn 0.3s;max-width:300px}
+@keyframes slideIn{from{transform:translateX(120%)}to{transform:translateX(0)}}
+.partner-hide{display:initial}
+body.partner-mode .partner-hide{display:none!important}
+body.partner-mode .tab-cta{display:none!important}
+.risk-gauge{width:80px;height:80px;position:relative;display:inline-block}
+.risk-gauge svg{transform:rotate(-90deg)}
+.risk-value{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:16px;font-weight:700}
+.legend-box{display:flex;gap:15px;flex-wrap:wrap;margin-top:10px;font-size:11px}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:12px;height:12px;border-radius:3px}
+@media print{.header,.tabs,.toolbar,.btn,.expand-btn{display:none!important}.view{display:block!important}}
+</style>
+<style id="plotly.js-style-modebar-529b43"></style><style id="plotly.js-style-modebar-e1fe5e"></style><style id="plotly.js-style-modebar-eae80f"></style><style id="plotly.js-style-modebar-b45367"></style><style id="plotly.js-style-modebar-807065"></style></head>
+<body>
+
+<header class="header" id="mainHeader">
+  <div class="header-content">
+    <div class="logo">
+      📦 DNR Control Center
+      <span class="logo-badge" id="modeBadge">CTA Mode</span>
+    </div>
+    <div class="header-actions">
+      <button class="mode-toggle" onclick="toggleMode()">🔄 Alternar Visão</button>
+      <button class="btn partner-hide" onclick="addCase()">+ Novo Caso</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('fileImport').click()">📥 Importar</button>
+      <input type="file" id="fileImport" style="display:none" accept=".xlsx,.csv" onchange="importFile(event)">
+      <button class="btn btn-success" onclick="openShareModal()">🔗 Compartilhar</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" onclick="showView('cases',this)">📋 Casos DNR</button>
+  <button class="tab tab-cta" onclick="showView('dashboard',this)">📊 Dashboard</button>
+  <button class="tab tab-cta" onclick="showView('recurrence',this)">🔁 Reincidência</button>
+  <button class="tab tab-cta" onclick="showView('lp',this)">🎯 Loss Prevention</button>
+  <button class="tab" onclick="showView('info',this)">ℹ️ Guia SOP</button>
+</nav>
+
+<div class="container">
+
+<!-- VIEW: CASOS -->
+<div class="view active" id="view-cases">
+  <div class="kpi-grid">
+    <div class="kpi-card" style="border-color:#2C5282"><div class="kpi-label">Total de Casos</div><div class="kpi-value" id="kpi-total">6</div><div class="kpi-sub">na base ativa</div></div>
+    <div class="kpi-card" style="border-color:#E67E22"><div class="kpi-label">Aguardando EDSP</div><div class="kpi-value" id="kpi-waiting">2</div><div class="kpi-sub">pendentes de resposta</div></div>
+    <div class="kpi-card" style="border-color:#2ECC71"><div class="kpi-label">Finalizados</div><div class="kpi-value" id="kpi-done">2</div><div class="kpi-sub">validados pelo CTA</div></div>
+    <div class="kpi-card" style="border-color:#E74C3C"><div class="kpi-label">Vencidos (&gt;7d)</div><div class="kpi-value" id="kpi-overdue">4</div><div class="kpi-sub">SOP item 7</div></div>
+    <div class="kpi-card" style="border-color:#9B59B6"><div class="kpi-label">Valor Total</div><div class="kpi-value" id="kpi-value">R$ 5.898,90</div><div class="kpi-sub">em risco</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      <span class="panel-title-text">📋 Casos DNR Ativos</span>
+      <span style="font-size:11px;color:#5C7A99;font-weight:normal">Clique em ▶ para expandir e responder</span>
+    </div>
+    <div class="toolbar">
+      <input class="search-box" id="searchInput" placeholder="🔍 Buscar por Tracking, DA, Station..." oninput="renderTable()">
+      <select class="filter-select" id="filterStatus" onchange="renderTable()">
+        <option value="">Todos os status</option>
+        <option value="waiting-edsp">Aguardando EDSP</option>
+        <option value="waiting-cta">Aguardando CTA</option>
+        <option value="done">Finalizado</option>
+        <option value="overdue">Vencido</option>
+      </select>
+      <select class="filter-select" id="filterPartner" onchange="renderTable()"><option value="">Todos os parceiros</option><option value="EDSP Alpha">EDSP Alpha</option><option value="EDSP Beta">EDSP Beta</option></select>
+    </div>
+    <div class="table-wrap">
+      <table id="casesTable">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Tracking ID</th>
+            <th>DA</th>
+            <th>Station</th>
+            <th>Parceiro</th>
+            <th>Data DNR</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th class="partner-hide">Justificativa</th>
+            <th class="partner-hide">Resp.</th>
+            <th>Dias</th>
+            <th class="partner-hide">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="casesBody">
+      <tr class="overdue">
+        <td><button class="expand-btn" onclick="toggleExpand('c1')">▼</button></td>
+        <td><input class="editable" value="BR123456789" onchange="updateField('c1','trackingId',this.value)"></td>
+        <td><input class="editable" value="João Silva" onchange="updateField('c1','da',this.value)"></td>
+        <td><input class="editable" value="DSP1" onchange="updateField('c1','station',this.value)"></td>
+        <td><input class="editable" value="EDSP Alpha" onchange="updateField('c1','partner',this.value)"></td>
+        <td><input class="editable" value="15/04/2025" onchange="updateField('c1','date',this.value)" style="width:90px"></td>
+        <td style="font-weight:600;color:#2C3744">R$ 450,00</td>
+        <td><span class="status-badge status-waiting-edsp">Aguardando EDSP</span></td>
+        <td class="partner-hide"><span style="color:#95A5A6">—</span></td>
+        <td class="partner-hide">—</td>
+        <td style="text-align:center;font-weight:700;color:#E74C3C">386d</td>
+        <td class="partner-hide"><button class="btn btn-sm btn-danger" onclick="deleteCase('c1')">🗑️</button></td>
+      </tr>
+      <tr class="detail-row"><td colspan="12"><div class="detail-content open">
+    <div class="detail-grid">
+      <!-- EDSP SECTION -->
+      <div class="detail-section section-edsp">
+        <div class="section-title">🔶 Resposta Parceiro EDSP</div>
+        <div class="form-row">
+          <label class="form-label">É DNR devido?</label>
+          <select class="form-select" onchange="updateEDSP('c1','isDue',this.value)">
+            <option value="">Selecione...</option>
+            <option>Sim</option>
+            <option>Não</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Detalhamento</label>
+          <textarea class="form-textarea" onchange="updateEDSP('c1','detail',this.value)" placeholder="Descreva o que aconteceu..."></textarea>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Ações tomadas pela base</label>
+          <textarea class="form-textarea" onchange="updateEDSP('c1','actions',this.value)" placeholder="Ex: treinamento, advertência, desligamento..."></textarea>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Evidências (imagens)</label>
+          <label class="upload-zone">
+            <input type="file" multiple="" accept="image/*" onchange="uploadImages('c1',this.files)">
+            📎 Clique para anexar ou arraste imagens aqui
+          </label>
+          <div class="image-preview"></div>
+        </div>
+        <button class="btn btn-warning" onclick="submitEDSP('c1')">✅ Enviar Resposta</button>
+        
+      </div>
+
+      <!-- CTA SECTION -->
+      <div class="detail-section section-cta partner-hide">
+        <div class="section-title">🔷 Validação CTA</div>
+        <div class="form-row">
+          <label class="form-label">Checklist SOP item 12</label>
+          <div class="check-grid">
+            <div class="check-item " onclick="toggleCheck('c1','geo')">Geolocalização <strong>—</strong></div><div class="check-item " onclick="toggleCheck('c1','recipient')">Recebedor <strong>—</strong></div><div class="check-item " onclick="toggleCheck('c1','daNote')">Nota DA <strong>—</strong></div><div class="check-item " onclick="toggleCheck('c1','call')">Ligação <strong>—</strong></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Justificativa (FlashRun)</label>
+          <select class="form-select" onchange="updateField('c1','justification',this.value);updateResponsibility('c1')">
+            <option value="">Selecione...</option>
+            <option>No DSP response</option><option>Incorrect Delivery Location</option><option>Missing Recipient Details</option><option>Bad Actor</option><option>Tossing Package</option><option>DNR Over 30 Days</option><option>Comm. Expired</option><option>Incorrect Geolocation</option><option>Successful DSP Justification</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Veredito Final</label>
+          <div class="check-grid">
+            <div class="check-item " onclick="setVerdict('c1','OK')">OK <strong></strong></div>
+            <div class="check-item " onclick="setVerdict('c1','NOK')">NOK <strong></strong></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Observações</label>
+          <textarea class="form-textarea" onchange="updateCTA('c1','notes',this.value)"></textarea>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-success" onclick="submitCTA('c1')">✅ Finalizar Caso</button>
+          <button class="btn btn-warning" onclick="returnToEDSP('c1')">↩️ Devolver EDSP (2d)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div style="margin-top:20px;background:white;padding:15px;border-radius:10px">
+      <div class="section-title" style="color:#2C3744">📜 Linha do Tempo</div>
+      <div class="timeline">
+        <div class="timeline-item"><div class="timeline-time">15/04/2025 10:30</div><div>Caso criado — Aguardando resposta EDSP</div></div>
+      </div>
+    </div>
+  </div></td></tr>
+    
+      <tr class="overdue">
+        <td><button class="expand-btn" onclick="toggleExpand('c2')">▶</button></td>
+        <td><input class="editable" value="BR987654321" onchange="updateField('c2','trackingId',this.value)"></td>
+        <td><input class="editable" value="Maria Santos" onchange="updateField('c2','da',this.value)"></td>
+        <td><input class="editable" value="DSP1" onchange="updateField('c2','station',this.value)"></td>
+        <td><input class="editable" value="EDSP Alpha" onchange="updateField('c2','partner',this.value)"></td>
+        <td><input class="editable" value="14/04/2025" onchange="updateField('c2','date',this.value)" style="width:90px"></td>
+        <td style="font-weight:600;color:#E74C3C">R$ 1.250,00</td>
+        <td><span class="status-badge status-waiting-cta">Aguardando CTA</span></td>
+        <td class="partner-hide">Incorrect Delivery Location</td>
+        <td class="partner-hide"><span class="resp-badge resp-edsp">EDSP</span></td>
+        <td style="text-align:center;font-weight:700;color:#E74C3C">387d</td>
+        <td class="partner-hide"><button class="btn btn-sm btn-danger" onclick="deleteCase('c2')">🗑️</button></td>
+      </tr>
+      
+    
+      <tr class="">
+        <td><button class="expand-btn" onclick="toggleExpand('c3')">▶</button></td>
+        <td><input class="editable" value="BR555444333" onchange="updateField('c3','trackingId',this.value)"></td>
+        <td><input class="editable" value="Pedro Costa" onchange="updateField('c3','da',this.value)"></td>
+        <td><input class="editable" value="DSP2" onchange="updateField('c3','station',this.value)"></td>
+        <td><input class="editable" value="EDSP Beta" onchange="updateField('c3','partner',this.value)"></td>
+        <td><input class="editable" value="10/04/2025" onchange="updateField('c3','date',this.value)" style="width:90px"></td>
+        <td style="font-weight:600;color:#2C3744">R$ 89,90</td>
+        <td><span class="status-badge status-done">Finalizado</span></td>
+        <td class="partner-hide">Bad Actor</td>
+        <td class="partner-hide"><span class="resp-badge resp-edsp">EDSP</span></td>
+        <td style="text-align:center;font-weight:700;color:#E74C3C">391d</td>
+        <td class="partner-hide"><button class="btn btn-sm btn-danger" onclick="deleteCase('c3')">🗑️</button></td>
+      </tr>
+      
+    
+      <tr class="overdue">
+        <td><button class="expand-btn" onclick="toggleExpand('c4')">▶</button></td>
+        <td><input class="editable" value="BR111222333" onchange="updateField('c4','trackingId',this.value)"></td>
+        <td><input class="editable" value="Ana Lima" onchange="updateField('c4','da',this.value)"></td>
+        <td><input class="editable" value="DSP3" onchange="updateField('c4','station',this.value)"></td>
+        <td><input class="editable" value="EDSP Beta" onchange="updateField('c4','partner',this.value)"></td>
+        <td><input class="editable" value="05/04/2025" onchange="updateField('c4','date',this.value)" style="width:90px"></td>
+        <td style="font-weight:600;color:#E74C3C">R$ 2.890,00</td>
+        <td><span class="status-badge status-overdue">Vencido</span></td>
+        <td class="partner-hide"><span style="color:#95A5A6">—</span></td>
+        <td class="partner-hide">—</td>
+        <td style="text-align:center;font-weight:700;color:#E74C3C">396d</td>
+        <td class="partner-hide"><button class="btn btn-sm btn-danger" onclick="deleteCase('c4')">🗑️</button></td>
+      </tr>
+      
+    
+      <tr class="overdue">
+        <td><button class="expand-btn" onclick="toggleExpand('c5')">▶</button></td>
+        <td><input class="editable" value="BR444555666" onchange="updateField('c5','trackingId',this.value)"></td>
+        <td><input class="editable" value="Carlos Rocha" onchange="updateField('c5','da',this.value)"></td>
+        <td><input class="editable" value="DSP1" onchange="updateField('c5','station',this.value)"></td>
+        <td><input class="editable" value="EDSP Alpha" onchange="updateField('c5','partner',this.value)"></td>
+        <td><input class="editable" value="16/04/2025" onchange="updateField('c5','date',this.value)" style="width:90px"></td>
+        <td style="font-weight:600;color:#2C3744">R$ 320,00</td>
+        <td><span class="status-badge status-waiting-edsp">Aguardando EDSP</span></td>
+        <td class="partner-hide"><span style="color:#95A5A6">—</span></td>
+        <td class="partner-hide">—</td>
+        <td style="text-align:center;font-weight:700;color:#E74C3C">385d</td>
+        <td class="partner-hide"><button class="btn btn-sm btn-danger" onclick="deleteCase('c5')">🗑️</button></td>
+      </tr>
+      
+    
+      <tr class="">
+        <td><button class="expand-btn" onclick="toggleExpand('c6')">▶</button></td>
+        <td><input class="editable" value="BR777888999" onchange="updateField('c6','trackingId',this.value)"></td>
+        <td><input class="editable" value="João Silva" onchange="updateField('c6','da',this.value)"></td>
+        <td><input class="editable" value="DSP1" onchange="updateField('c6','station',this.value)"></td>
+        <td><input class="editable" value="EDSP Alpha" onchange="updateField('c6','partner',this.value)"></td>
+        <td><input class="editable" value="12/04/2025" onchange="updateField('c6','date',this.value)" style="width:90px"></td>
+        <td style="font-weight:600;color:#2C3744">R$ 899,00</td>
+        <td><span class="status-badge status-done">Finalizado</span></td>
+        <td class="partner-hide">Successful DSP Justification</td>
+        <td class="partner-hide"><span class="resp-badge resp-amzl">AMZL</span></td>
+        <td style="text-align:center;font-weight:700;color:#E74C3C">389d</td>
+        <td class="partner-hide"><button class="btn btn-sm btn-danger" onclick="deleteCase('c6')">🗑️</button></td>
+      </tr>
+      
+    </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: DASHBOARD -->
+<div class="view" id="view-dashboard">
+  <div class="chart-grid">
+    <div class="chart-box"><div class="chart-title">📈 Evolução Semanal</div><div id="chart-weekly" style="height:320px" class="js-plotly-plot"><div class="plot-container plotly"><div class="user-select-none svg-container" style="position: relative; width: 100%; height: 100%;"><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320" style="background: white;"><defs id="defs-529b43"><g class="clips"><clipPath id="clip529b43xyplot" class="plotclip"><rect width="413" height="270"></rect></clipPath><clipPath class="axesclip" id="clip529b43x"><rect x="40" y="0" width="413" height="320"></rect></clipPath><clipPath class="axesclip" id="clip529b43y"><rect x="0" y="10" width="463.333" height="270"></rect></clipPath><clipPath class="axesclip" id="clip529b43xy"><rect x="40" y="10" width="413" height="270"></rect></clipPath></g><g class="gradients"></g><g class="patterns"></g></defs><g class="bglayer"><rect class="bg" x="40" y="10" width="413" height="270" style="fill: rgb(247, 250, 252); fill-opacity: 1; stroke-width: 0px;"></rect></g><g class="draglayer cursor-crosshair"><g class="xy"><rect class="nsewdrag drag" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="40" y="10" width="413" height="270"></rect><rect class="nwdrag drag cursor-nw-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="20" y="-10" width="20" height="20"></rect><rect class="nedrag drag cursor-ne-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="453" y="-10" width="20" height="20"></rect><rect class="swdrag drag cursor-sw-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="20" y="280" width="20" height="20"></rect><rect class="sedrag drag cursor-se-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="453" y="280" width="20" height="20"></rect><rect class="ewdrag drag cursor-ew-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="81.30000000000001" y="280.5" width="330.40000000000003" height="20"></rect><rect class="wdrag drag cursor-w-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="40" y="280.5" width="41.300000000000004" height="20"></rect><rect class="edrag drag cursor-e-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="411.7" y="280.5" width="41.300000000000004" height="20"></rect><rect class="nsdrag drag cursor-ns-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="37" width="20" height="216"></rect><rect class="sdrag drag cursor-s-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="253" width="20" height="27"></rect><rect class="ndrag drag cursor-n-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="10" width="20" height="27"></rect></g></g><g class="layer-below"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="cartesianlayer"><g class="subplot xy"><g class="layer-subplot"><g class="shapelayer"></g><g class="imagelayer"></g></g><g class="minor-gridlayer"><g class="x"></g><g class="y"></g></g><g class="gridlayer"><g class="x"></g><g class="y"><path class="ygrid crisp" transform="translate(0,237.25)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,194.5)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,151.75)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,109)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,66.25)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,23.5)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path></g></g><g class="zerolinelayer"><path class="yzl zl crisp" transform="translate(0,280)" d="M40,0h413" style="stroke: rgb(68, 68, 68); stroke-opacity: 1; stroke-width: 1px;"></path></g><path class="xlines-below"></path><path class="ylines-below"></path><g class="overlines-below"></g><g class="xaxislayer-below"></g><g class="yaxislayer-below"></g><g class="overaxes-below"></g><g class="plot" transform="translate(40,10)" clip-path="url(#clip529b43xyplot)"><g class="barlayer mlayer"><g class="trace bars" style="opacity: 1;"><g class="points"><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(44, 82, 130); fill-opacity: 1;" d="M13.77,270V99H123.9V270Z"></path></g><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(44, 82, 130); fill-opacity: 1;" d="M151.43,270V13.5H261.57V270Z"></path></g><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(44, 82, 130); fill-opacity: 1;" d="M289.1,270V184.5H399.23V270Z"></path></g></g></g></g></g><g class="overplot"></g><path class="xlines-above crisp" style="fill: none;" d="M0,0"></path><path class="ylines-above crisp" style="fill: none;" d="M0,0"></path><g class="overlines-above"></g><g class="xaxislayer-above"><g class="xtick"><text text-anchor="middle" x="0" y="293" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="Sem 3" data-math="N" transform="translate(108.83,0)">Sem 3</text></g><g class="xtick"><text text-anchor="middle" x="0" y="293" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="Sem 2" data-math="N" transform="translate(246.5,0)">Sem 2</text></g><g class="xtick"><text text-anchor="middle" x="0" y="293" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="Sem 1" data-math="N" transform="translate(384.17,0)">Sem 1</text></g></g><g class="yaxislayer-above"><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="0" data-math="N" transform="translate(0,280)">0</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="0.5" data-math="N" transform="translate(0,237.25)">0.5</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="1" data-math="N" transform="translate(0,194.5)">1</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="1.5" data-math="N" transform="translate(0,151.75)">1.5</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="2" data-math="N" transform="translate(0,109)">2</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="2.5" data-math="N" transform="translate(0,66.25)">2.5</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="3" data-math="N" transform="translate(0,23.5)">3</text></g></g><g class="overaxes-above"></g></g></g><g class="polarlayer"></g><g class="smithlayer"></g><g class="ternarylayer"></g><g class="geolayer"></g><g class="funnelarealayer"></g><g class="pielayer"></g><g class="iciclelayer"></g><g class="treemaplayer"></g><g class="sunburstlayer"></g><g class="glimages"></g></svg><div class="gl-container"></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320"><defs id="topdefs-529b43"><g class="clips"></g></defs><g class="indicatorlayer"></g><g class="layer-above"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="selectionlayer"></g><g class="infolayer"><g class="g-gtitle"></g><g class="g-xtitle"></g><g class="g-ytitle"></g></g><g class="menulayer"></g><g class="zoomlayer"></g></svg><div class="modebar-container" style="position: absolute; top: 0px; right: 0px; width: 100%;"><div id="modebar-529b43" class="modebar modebar--hover ease-bg"><div class="modebar-group"><a rel="tooltip" class="modebar-btn" data-title="Download plot as a png" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m500 450c-83 0-150-67-150-150 0-83 67-150 150-150 83 0 150 67 150 150 0 83-67 150-150 150z m400 150h-120c-16 0-34 13-39 29l-31 93c-6 15-23 28-40 28h-340c-16 0-34-13-39-28l-31-94c-6-15-23-28-40-28h-120c-55 0-100-45-100-100v-450c0-55 45-100 100-100h800c55 0 100 45 100 100v450c0 55-45 100-100 100z m-400-550c-138 0-250 112-250 250 0 138 112 250 250 250 138 0 250-112 250-250 0-138-112-250-250-250z m365 380c-19 0-35 16-35 35 0 19 16 35 35 35 19 0 35-16 35-35 0-19-16-35-35-35z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div><div class="modebar-group"><a rel="tooltip" class="modebar-btn active" data-title="Zoom" data-attr="dragmode" data-val="zoom" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m1000-25l-250 251c40 63 63 138 63 218 0 224-182 406-407 406-224 0-406-182-406-406s183-406 407-406c80 0 155 22 218 62l250-250 125 125z m-812 250l0 438 437 0 0-438-437 0z m62 375l313 0 0-312-313 0 0 312z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Pan" data-attr="dragmode" data-val="pan" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m1000 350l-187 188 0-125-250 0 0 250 125 0-188 187-187-187 125 0 0-250-250 0 0 125-188-188 186-187 0 125 252 0 0-250-125 0 187-188 188 188-125 0 0 250 250 0 0-126 187 188z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Box Select" data-attr="dragmode" data-val="select" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m0 850l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m285 0l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m-857-286l0-143 143 0 0 143-143 0z m857 0l0-143 143 0 0 143-143 0z m-857-285l0-143 143 0 0 143-143 0z m857 0l0-143 143 0 0 143-143 0z m-857-286l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m285 0l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Lasso Select" data-attr="dragmode" data-val="lasso" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1031 1000" class="icon" height="1em" width="1em"><path d="m1018 538c-36 207-290 336-568 286-277-48-473-256-436-463 10-57 36-108 76-151-13-66 11-137 68-183 34-28 75-41 114-42l-55-70 0 0c-2-1-3-2-4-3-10-14-8-34 5-45 14-11 34-8 45 4 1 1 2 3 2 5l0 0 113 140c16 11 31 24 45 40 4 3 6 7 8 11 48-3 100 0 151 9 278 48 473 255 436 462z m-624-379c-80 14-149 48-197 96 42 42 109 47 156 9 33-26 47-66 41-105z m-187-74c-19 16-33 37-39 60 50-32 109-55 174-68-42-25-95-24-135 8z m360 75c-34-7-69-9-102-8 8 62-16 128-68 170-73 59-175 54-244-5-9 20-16 40-20 61-28 159 121 317 333 354s407-60 434-217c28-159-121-318-333-355z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div><div class="modebar-group"><a rel="tooltip" class="modebar-btn" data-title="Zoom in" data-attr="zoom" data-val="in" data-toggle="false" data-gravity="n"><svg viewBox="0 0 875 1000" class="icon" height="1em" width="1em"><path d="m1 787l0-875 875 0 0 875-875 0z m687-500l-187 0 0-187-125 0 0 187-188 0 0 125 188 0 0 187 125 0 0-187 187 0 0-125z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Zoom out" data-attr="zoom" data-val="out" data-toggle="false" data-gravity="n"><svg viewBox="0 0 875 1000" class="icon" height="1em" width="1em"><path d="m0 788l0-876 875 0 0 876-875 0z m688-500l-500 0 0 125 500 0 0-125z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Autoscale" data-attr="zoom" data-val="auto" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m250 850l-187 0-63 0 0-62 0-188 63 0 0 188 187 0 0 62z m688 0l-188 0 0-62 188 0 0-188 62 0 0 188 0 62-62 0z m-875-938l0 188-63 0 0-188 0-62 63 0 187 0 0 62-187 0z m875 188l0-188-188 0 0-62 188 0 62 0 0 62 0 188-62 0z m-125 188l-1 0-93-94-156 156 156 156 92-93 2 0 0 250-250 0 0-2 93-92-156-156-156 156 94 92 0 2-250 0 0-250 0 0 93 93 157-156-157-156-93 94 0 0 0-250 250 0 0 0-94 93 156 157 156-157-93-93 0 0 250 0 0 250z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Reset axes" data-attr="zoom" data-val="reset" data-toggle="false" data-gravity="n"><svg viewBox="0 0 928.6 1000" class="icon" height="1em" width="1em"><path d="m786 296v-267q0-15-11-26t-25-10h-214v214h-143v-214h-214q-15 0-25 10t-11 26v267q0 1 0 2t0 2l321 264 321-264q1-1 1-4z m124 39l-34-41q-5-5-12-6h-2q-7 0-12 3l-386 322-386-322q-7-4-13-4-7 2-12 7l-35 41q-4 5-3 13t6 12l401 334q18 15 42 15t43-15l136-114v109q0 8 5 13t13 5h107q8 0 13-5t5-13v-227l122-102q5-5 6-12t-4-13z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div></div></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320"><g class="hoverlayer"></g></svg></div></div></div></div>
+    <div class="chart-box"><div class="chart-title">🍩 Distribuição por Justificativa</div><div id="chart-justification" style="height:320px" class="js-plotly-plot"><div class="plot-container plotly"><div class="user-select-none svg-container" style="position: relative; width: 100%; height: 100%;"><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320" style="background: rgb(255, 255, 255);"><defs id="defs-e1fe5e"><g class="clips"></g><g class="gradients"></g><g class="patterns"></g></defs><g class="bglayer"></g><g class="draglayer"></g><g class="layer-below"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="cartesianlayer"></g><g class="polarlayer"></g><g class="smithlayer"></g><g class="ternarylayer"></g><g class="geolayer"></g><g class="funnelarealayer"></g><g class="pielayer"><g class="trace" stroke-linejoin="round" style="opacity: 1;"><g class="slice"><path class="surface" style="pointer-events: all; fill: rgb(44, 82, 130); fill-opacity: 1; stroke-width: 0px; stroke: rgb(68, 68, 68); stroke-opacity: 1;" d="M193.42562584220408,192a64,64 0 0 0 -55.42562584220408,-95.99999999999999l0,-64a128,128 0 0 1 110.85125168440815,191.99999999999997Z"></path><g class="slicetext"><text data-notex="1" class="slicetext" transform="translate(221.13798099963424,116.49999999999999)" text-anchor="middle" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(255, 255, 255); fill-opacity: 1; white-space: pre;" data-unformatted="33.3%" data-math="N" x="0" y="0">33.3%</text></g></g><g class="slice"><path class="surface" style="pointer-events: all; fill: rgb(221, 107, 32); fill-opacity: 1; stroke-width: 0px; stroke: rgb(68, 68, 68); stroke-opacity: 1;" d="M138,96a64,64 0 0 0 -55.42562584220408,95.99999999999999l-55.42562584220408,31.999999999999986a128,128 0 0 1 110.85125168440815,-191.99999999999997Z"></path><g class="slicetext"><text data-notex="1" class="slicetext" transform="translate(54.86110347302201,116.49999999999999)" text-anchor="middle" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" data-unformatted="33.3%" data-math="N" x="0" y="0">33.3%</text></g></g><g class="slice"><path class="surface" style="pointer-events: all; fill: rgb(231, 76, 60); fill-opacity: 1; stroke-width: 0px; stroke: rgb(68, 68, 68); stroke-opacity: 1;" d="M82.57437415779592,192a64,64 0 0 0 110.85125168440814,4.263256414560601e-14l55.42562584220406,32.00000000000003a128,128 0 0 1 -221.70250336881628,-8.526512829121202e-14Z"></path><g class="slicetext"><text data-notex="1" class="slicetext" transform="translate(137.99954223632812,260.5)" text-anchor="middle" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(255, 255, 255); fill-opacity: 1; white-space: pre;" data-unformatted="33.3%" data-math="N" x="0" y="0">33.3%</text></g></g></g></g><g class="iciclelayer"></g><g class="treemaplayer"></g><g class="sunburstlayer"></g><g class="glimages"></g></svg><div class="gl-container"></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320"><defs id="topdefs-e1fe5e"><g class="clips"></g><clipPath id="legende1fe5e"><rect width="187" height="67" x="0" y="0"></rect></clipPath></defs><g class="indicatorlayer"></g><g class="layer-above"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="selectionlayer"></g><g class="infolayer"><g class="legend" pointer-events="all" transform="translate(266,126.5)"><rect class="bg" shape-rendering="crispEdges" style="stroke: rgb(68, 68, 68); stroke-opacity: 1; fill: rgb(255, 255, 255); fill-opacity: 1; stroke-width: 0px;" width="187" height="67" x="0" y="0"></rect><g class="scrollbox" transform="" clip-path="url(#legende1fe5e)"><g class="groups"><g class="traces" style="opacity: 1;" transform="translate(0,14.5)"><text class="legendtext" text-anchor="start" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 10px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" x="40" y="3.9" data-unformatted="Incorrect Delivery Location" data-math="N">Incorrect Delivery Location</text><g class="layers" style="opacity: 1;"><g class="legendfill"></g><g class="legendlines"></g><g class="legendsymbols"><g class="legendpoints"><path class="legendpie" d="M6,6H-6V-6H6Z" transform="translate(20,0)" style="fill: rgb(44, 82, 130); fill-opacity: 1; stroke-width: 0px; stroke: rgb(68, 68, 68); stroke-opacity: 1;"></path></g></g></g><rect class="legendtoggle" style="cursor: pointer; fill: rgb(0, 0, 0); fill-opacity: 0;" pointer-events="all" x="0" y="-9.5" width="181.56666564941406" height="19"></rect></g><g class="traces" style="opacity: 1;" transform="translate(0,33.5)"><text class="legendtext" text-anchor="start" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 10px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" x="40" y="3.9" data-unformatted="Bad Actor" data-math="N">Bad Actor</text><g class="layers" style="opacity: 1;"><g class="legendfill"></g><g class="legendlines"></g><g class="legendsymbols"><g class="legendpoints"><path class="legendpie" d="M6,6H-6V-6H6Z" transform="translate(20,0)" style="fill: rgb(221, 107, 32); fill-opacity: 1; stroke-width: 0px; stroke: rgb(68, 68, 68); stroke-opacity: 1;"></path></g></g></g><rect class="legendtoggle" style="cursor: pointer; fill: rgb(0, 0, 0); fill-opacity: 0;" pointer-events="all" x="0" y="-9.5" width="181.56666564941406" height="19"></rect></g><g class="traces" style="opacity: 1;" transform="translate(0,52.5)"><text class="legendtext" text-anchor="start" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 10px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" x="40" y="3.9" data-unformatted="Successful DSP Justification" data-math="N">Successful DSP Justification</text><g class="layers" style="opacity: 1;"><g class="legendfill"></g><g class="legendlines"></g><g class="legendsymbols"><g class="legendpoints"><path class="legendpie" d="M6,6H-6V-6H6Z" transform="translate(20,0)" style="fill: rgb(231, 76, 60); fill-opacity: 1; stroke-width: 0px; stroke: rgb(68, 68, 68); stroke-opacity: 1;"></path></g></g></g><rect class="legendtoggle" style="cursor: pointer; fill: rgb(0, 0, 0); fill-opacity: 0;" pointer-events="all" x="0" y="-9.5" width="181.56666564941406" height="19"></rect></g></g></g><rect class="scrollbar" rx="20" ry="3" width="0" height="0" style="fill: rgb(128, 139, 164); fill-opacity: 1;" x="0" y="0"></rect></g><g class="g-gtitle"></g></g><g class="menulayer"></g><g class="zoomlayer"></g></svg><div class="modebar-container" style="position: absolute; top: 0px; right: 0px; width: 100%;"><div id="modebar-e1fe5e" class="modebar modebar--hover ease-bg"><div class="modebar-group"><a rel="tooltip" class="modebar-btn" data-title="Download plot as a png" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m500 450c-83 0-150-67-150-150 0-83 67-150 150-150 83 0 150 67 150 150 0 83-67 150-150 150z m400 150h-120c-16 0-34 13-39 29l-31 93c-6 15-23 28-40 28h-340c-16 0-34-13-39-28l-31-94c-6-15-23-28-40-28h-120c-55 0-100-45-100-100v-450c0-55 45-100 100-100h800c55 0 100 45 100 100v450c0 55-45 100-100 100z m-400-550c-138 0-250 112-250 250 0 138 112 250 250 250 138 0 250-112 250-250 0-138-112-250-250-250z m365 380c-19 0-35 16-35 35 0 19 16 35 35 35 19 0 35-16 35-35 0-19-16-35-35-35z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div></div></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320"><g class="hoverlayer"></g></svg></div></div></div></div>
+    <div class="chart-box"><div class="chart-title">⚖️ Responsabilidade: EDSP vs AMZL</div><div id="chart-responsibility" style="height:320px" class="js-plotly-plot"><div class="plot-container plotly"><div class="user-select-none svg-container" style="position: relative; width: 100%; height: 100%;"><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320" style="background: white;"><defs id="defs-eae80f"><g class="clips"><clipPath id="clipeae80fxyplot" class="plotclip"><rect width="413" height="270"></rect></clipPath><clipPath class="axesclip" id="clipeae80fx"><rect x="40" y="0" width="413" height="320"></rect></clipPath><clipPath class="axesclip" id="clipeae80fy"><rect x="0" y="10" width="463.333" height="270"></rect></clipPath><clipPath class="axesclip" id="clipeae80fxy"><rect x="40" y="10" width="413" height="270"></rect></clipPath></g><g class="gradients"></g><g class="patterns"></g></defs><g class="bglayer"><rect class="bg" x="40" y="10" width="413" height="270" style="fill: rgb(247, 250, 252); fill-opacity: 1; stroke-width: 0px;"></rect></g><g class="draglayer cursor-crosshair"><g class="xy"><rect class="nsewdrag drag" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="40" y="10" width="413" height="270"></rect><rect class="nwdrag drag cursor-nw-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="20" y="-10" width="20" height="20"></rect><rect class="nedrag drag cursor-ne-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="453" y="-10" width="20" height="20"></rect><rect class="swdrag drag cursor-sw-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="20" y="280" width="20" height="20"></rect><rect class="sedrag drag cursor-se-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="453" y="280" width="20" height="20"></rect><rect class="ewdrag drag cursor-ew-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="81.30000000000001" y="280.5" width="330.40000000000003" height="20"></rect><rect class="wdrag drag cursor-w-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="40" y="280.5" width="41.300000000000004" height="20"></rect><rect class="edrag drag cursor-e-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="411.7" y="280.5" width="41.300000000000004" height="20"></rect><rect class="nsdrag drag cursor-ns-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="37" width="20" height="216"></rect><rect class="sdrag drag cursor-s-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="253" width="20" height="27"></rect><rect class="ndrag drag cursor-n-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="10" width="20" height="27"></rect></g></g><g class="layer-below"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="cartesianlayer"><g class="subplot xy"><g class="layer-subplot"><g class="shapelayer"></g><g class="imagelayer"></g></g><g class="minor-gridlayer"><g class="x"></g><g class="y"></g></g><g class="gridlayer"><g class="x"></g><g class="y"><path class="ygrid crisp" transform="translate(0,215.88)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,151.75)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,87.63)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,23.5)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path></g></g><g class="zerolinelayer"><path class="yzl zl crisp" transform="translate(0,280)" d="M40,0h413" style="stroke: rgb(68, 68, 68); stroke-opacity: 1; stroke-width: 1px;"></path></g><path class="xlines-below"></path><path class="ylines-below"></path><g class="overlines-below"></g><g class="xaxislayer-below"></g><g class="yaxislayer-below"></g><g class="overaxes-below"></g><g class="plot" transform="translate(40,10)" clip-path="url(#clipeae80fxyplot)"><g class="barlayer mlayer"><g class="trace bars" style="opacity: 1;"><g class="points"><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(221, 107, 32); fill-opacity: 1;" d="M20.65,270V13.5H185.85V270Z"></path><text class="bartext bartext-outside" text-anchor="middle" data-notex="1" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" data-unformatted="2" data-math="N" x="0" y="0" transform="translate(103.24974060058594,6.5)">2</text></g><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(44, 82, 130); fill-opacity: 1;" d="M227.15,270V141.75H392.35V270Z"></path><text class="bartext bartext-outside" text-anchor="middle" data-notex="1" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" data-unformatted="1" data-math="N" x="0" y="0" transform="translate(309.74974060058594,134.75)">1</text></g></g></g></g></g><g class="overplot"></g><path class="xlines-above crisp" style="fill: none;" d="M0,0"></path><path class="ylines-above crisp" style="fill: none;" d="M0,0"></path><g class="overlines-above"></g><g class="xaxislayer-above"><g class="xtick"><text text-anchor="middle" x="0" y="293" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="EDSP" data-math="N" transform="translate(143.25,0)">EDSP</text></g><g class="xtick"><text text-anchor="middle" x="0" y="293" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="AMZL" data-math="N" transform="translate(349.75,0)">AMZL</text></g></g><g class="yaxislayer-above"><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="0" data-math="N" transform="translate(0,280)">0</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="0.5" data-math="N" transform="translate(0,215.88)">0.5</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="1" data-math="N" transform="translate(0,151.75)">1</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="1.5" data-math="N" transform="translate(0,87.63)">1.5</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="2" data-math="N" transform="translate(0,23.5)">2</text></g></g><g class="overaxes-above"></g></g></g><g class="polarlayer"></g><g class="smithlayer"></g><g class="ternarylayer"></g><g class="geolayer"></g><g class="funnelarealayer"></g><g class="pielayer"></g><g class="iciclelayer"></g><g class="treemaplayer"></g><g class="sunburstlayer"></g><g class="glimages"></g></svg><div class="gl-container"></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320"><defs id="topdefs-eae80f"><g class="clips"></g></defs><g class="indicatorlayer"></g><g class="layer-above"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="selectionlayer"></g><g class="infolayer"><g class="g-gtitle"></g><g class="g-xtitle"></g><g class="g-ytitle"></g></g><g class="menulayer"></g><g class="zoomlayer"></g></svg><div class="modebar-container" style="position: absolute; top: 0px; right: 0px; width: 100%;"><div id="modebar-eae80f" class="modebar modebar--hover ease-bg"><div class="modebar-group"><a rel="tooltip" class="modebar-btn" data-title="Download plot as a png" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m500 450c-83 0-150-67-150-150 0-83 67-150 150-150 83 0 150 67 150 150 0 83-67 150-150 150z m400 150h-120c-16 0-34 13-39 29l-31 93c-6 15-23 28-40 28h-340c-16 0-34-13-39-28l-31-94c-6-15-23-28-40-28h-120c-55 0-100-45-100-100v-450c0-55 45-100 100-100h800c55 0 100 45 100 100v450c0 55-45 100-100 100z m-400-550c-138 0-250 112-250 250 0 138 112 250 250 250 138 0 250-112 250-250 0-138-112-250-250-250z m365 380c-19 0-35 16-35 35 0 19 16 35 35 35 19 0 35-16 35-35 0-19-16-35-35-35z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div><div class="modebar-group"><a rel="tooltip" class="modebar-btn active" data-title="Zoom" data-attr="dragmode" data-val="zoom" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m1000-25l-250 251c40 63 63 138 63 218 0 224-182 406-407 406-224 0-406-182-406-406s183-406 407-406c80 0 155 22 218 62l250-250 125 125z m-812 250l0 438 437 0 0-438-437 0z m62 375l313 0 0-312-313 0 0 312z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Pan" data-attr="dragmode" data-val="pan" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m1000 350l-187 188 0-125-250 0 0 250 125 0-188 187-187-187 125 0 0-250-250 0 0 125-188-188 186-187 0 125 252 0 0-250-125 0 187-188 188 188-125 0 0 250 250 0 0-126 187 188z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Box Select" data-attr="dragmode" data-val="select" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m0 850l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m285 0l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m-857-286l0-143 143 0 0 143-143 0z m857 0l0-143 143 0 0 143-143 0z m-857-285l0-143 143 0 0 143-143 0z m857 0l0-143 143 0 0 143-143 0z m-857-286l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m285 0l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Lasso Select" data-attr="dragmode" data-val="lasso" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1031 1000" class="icon" height="1em" width="1em"><path d="m1018 538c-36 207-290 336-568 286-277-48-473-256-436-463 10-57 36-108 76-151-13-66 11-137 68-183 34-28 75-41 114-42l-55-70 0 0c-2-1-3-2-4-3-10-14-8-34 5-45 14-11 34-8 45 4 1 1 2 3 2 5l0 0 113 140c16 11 31 24 45 40 4 3 6 7 8 11 48-3 100 0 151 9 278 48 473 255 436 462z m-624-379c-80 14-149 48-197 96 42 42 109 47 156 9 33-26 47-66 41-105z m-187-74c-19 16-33 37-39 60 50-32 109-55 174-68-42-25-95-24-135 8z m360 75c-34-7-69-9-102-8 8 62-16 128-68 170-73 59-175 54-244-5-9 20-16 40-20 61-28 159 121 317 333 354s407-60 434-217c28-159-121-318-333-355z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div><div class="modebar-group"><a rel="tooltip" class="modebar-btn" data-title="Zoom in" data-attr="zoom" data-val="in" data-toggle="false" data-gravity="n"><svg viewBox="0 0 875 1000" class="icon" height="1em" width="1em"><path d="m1 787l0-875 875 0 0 875-875 0z m687-500l-187 0 0-187-125 0 0 187-188 0 0 125 188 0 0 187 125 0 0-187 187 0 0-125z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Zoom out" data-attr="zoom" data-val="out" data-toggle="false" data-gravity="n"><svg viewBox="0 0 875 1000" class="icon" height="1em" width="1em"><path d="m0 788l0-876 875 0 0 876-875 0z m688-500l-500 0 0 125 500 0 0-125z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Autoscale" data-attr="zoom" data-val="auto" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m250 850l-187 0-63 0 0-62 0-188 63 0 0 188 187 0 0 62z m688 0l-188 0 0-62 188 0 0-188 62 0 0 188 0 62-62 0z m-875-938l0 188-63 0 0-188 0-62 63 0 187 0 0 62-187 0z m875 188l0-188-188 0 0-62 188 0 62 0 0 62 0 188-62 0z m-125 188l-1 0-93-94-156 156 156 156 92-93 2 0 0 250-250 0 0-2 93-92-156-156-156 156 94 92 0 2-250 0 0-250 0 0 93 93 157-156-157-156-93 94 0 0 0-250 250 0 0 0-94 93 156 157 156-157-93-93 0 0 250 0 0 250z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Reset axes" data-attr="zoom" data-val="reset" data-toggle="false" data-gravity="n"><svg viewBox="0 0 928.6 1000" class="icon" height="1em" width="1em"><path d="m786 296v-267q0-15-11-26t-25-10h-214v214h-143v-214h-214q-15 0-25 10t-11 26v267q0 1 0 2t0 2l321 264 321-264q1-1 1-4z m124 39l-34-41q-5-5-12-6h-2q-7 0-12 3l-386 322-386-322q-7-4-13-4-7 2-12 7l-35 41q-4 5-3 13t6 12l401 334q18 15 42 15t43-15l136-114v109q0 8 5 13t13 5h107q8 0 13-5t5-13v-227l122-102q5-5 6-12t-4-13z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div></div></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320"><g class="hoverlayer"></g></svg></div></div></div></div>
+    <div class="chart-box"><div class="chart-title">🏢 Performance por Parceiro</div><div id="chart-partner" style="height:320px" class="js-plotly-plot"><div class="plot-container plotly"><div class="user-select-none svg-container" style="position: relative; width: 100%; height: 100%;"><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320" style="background: white;"><defs id="defs-b45367"><g class="clips"><clipPath id="clipb45367xyplot" class="plotclip"><rect width="413" height="250"></rect></clipPath><clipPath class="axesclip" id="clipb45367x"><rect x="40" y="0" width="413" height="320"></rect></clipPath><clipPath class="axesclip" id="clipb45367y"><rect x="0" y="10" width="463.333" height="250"></rect></clipPath><clipPath class="axesclip" id="clipb45367xy"><rect x="40" y="10" width="413" height="250"></rect></clipPath></g><g class="gradients"></g><g class="patterns"></g></defs><g class="bglayer"><rect class="bg" x="40" y="10" width="413" height="250" style="fill: rgb(247, 250, 252); fill-opacity: 1; stroke-width: 0px;"></rect></g><g class="draglayer cursor-crosshair"><g class="xy"><rect class="nsewdrag drag" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="40" y="10" width="413" height="250"></rect><rect class="nwdrag drag cursor-nw-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="20" y="-10" width="20" height="20"></rect><rect class="nedrag drag cursor-ne-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="453" y="-10" width="20" height="20"></rect><rect class="swdrag drag cursor-sw-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="20" y="260" width="20" height="20"></rect><rect class="sedrag drag cursor-se-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="453" y="260" width="20" height="20"></rect><rect class="ewdrag drag cursor-ew-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="81.30000000000001" y="260.5" width="330.40000000000003" height="20"></rect><rect class="wdrag drag cursor-w-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="40" y="260.5" width="41.300000000000004" height="20"></rect><rect class="edrag drag cursor-e-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="411.7" y="260.5" width="41.300000000000004" height="20"></rect><rect class="nsdrag drag cursor-ns-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="35" width="20" height="200"></rect><rect class="sdrag drag cursor-s-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="235" width="20" height="25"></rect><rect class="ndrag drag cursor-n-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="10" width="20" height="25"></rect></g></g><g class="layer-below"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="cartesianlayer"><g class="subplot xy"><g class="layer-subplot"><g class="shapelayer"></g><g class="imagelayer"></g></g><g class="minor-gridlayer"><g class="x"></g><g class="y"></g></g><g class="gridlayer"><g class="x"></g><g class="y"><path class="ygrid crisp" transform="translate(0,200.63)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,141.25)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,81.88)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,22.5)" d="M40,0h413" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path></g></g><g class="zerolinelayer"><path class="yzl zl crisp" transform="translate(0,260)" d="M40,0h413" style="stroke: rgb(68, 68, 68); stroke-opacity: 1; stroke-width: 1px;"></path></g><path class="xlines-below"></path><path class="ylines-below"></path><g class="overlines-below"></g><g class="xaxislayer-below"></g><g class="yaxislayer-below"></g><g class="overaxes-below"></g><g class="plot" transform="translate(40,10)" clip-path="url(#clipb45367xyplot)"><g class="barlayer mlayer"><g class="trace bars" style="opacity: 1;"><g class="points"><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(155, 89, 182); fill-opacity: 1;" d="M20.65,250V12.5H185.85V250Z"></path></g><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(155, 89, 182); fill-opacity: 1;" d="M227.15,250V131.25H392.35V250Z"></path></g></g></g></g></g><g class="overplot"></g><path class="xlines-above crisp" style="fill: none;" d="M0,0"></path><path class="ylines-above crisp" style="fill: none;" d="M0,0"></path><g class="overlines-above"></g><g class="xaxislayer-above"><g class="xtick"><text text-anchor="middle" x="0" y="273" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="EDSP Alpha" data-math="N" transform="translate(143.25,0)">EDSP Alpha</text></g><g class="xtick"><text text-anchor="middle" x="0" y="273" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="EDSP Beta" data-math="N" transform="translate(349.75,0)">EDSP Beta</text></g></g><g class="yaxislayer-above"><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="0" data-math="N" transform="translate(0,260)">0</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="1" data-math="N" transform="translate(0,200.63)">1</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="2" data-math="N" transform="translate(0,141.25)">2</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="3" data-math="N" transform="translate(0,81.88)">3</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="4" data-math="N" transform="translate(0,22.5)">4</text></g></g><g class="overaxes-above"></g></g></g><g class="polarlayer"></g><g class="smithlayer"></g><g class="ternarylayer"></g><g class="geolayer"></g><g class="funnelarealayer"></g><g class="pielayer"></g><g class="iciclelayer"></g><g class="treemaplayer"></g><g class="sunburstlayer"></g><g class="glimages"></g></svg><div class="gl-container"></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320"><defs id="topdefs-b45367"><g class="clips"></g></defs><g class="indicatorlayer"></g><g class="layer-above"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="selectionlayer"></g><g class="infolayer"><g class="g-gtitle"></g><g class="g-xtitle"></g><g class="g-ytitle"></g></g><g class="menulayer"></g><g class="zoomlayer"></g></svg><div class="modebar-container" style="position: absolute; top: 0px; right: 0px; width: 100%;"><div id="modebar-b45367" class="modebar modebar--hover ease-bg"><div class="modebar-group"><a rel="tooltip" class="modebar-btn" data-title="Download plot as a png" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m500 450c-83 0-150-67-150-150 0-83 67-150 150-150 83 0 150 67 150 150 0 83-67 150-150 150z m400 150h-120c-16 0-34 13-39 29l-31 93c-6 15-23 28-40 28h-340c-16 0-34-13-39-28l-31-94c-6-15-23-28-40-28h-120c-55 0-100-45-100-100v-450c0-55 45-100 100-100h800c55 0 100 45 100 100v450c0 55-45 100-100 100z m-400-550c-138 0-250 112-250 250 0 138 112 250 250 250 138 0 250-112 250-250 0-138-112-250-250-250z m365 380c-19 0-35 16-35 35 0 19 16 35 35 35 19 0 35-16 35-35 0-19-16-35-35-35z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div><div class="modebar-group"><a rel="tooltip" class="modebar-btn active" data-title="Zoom" data-attr="dragmode" data-val="zoom" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m1000-25l-250 251c40 63 63 138 63 218 0 224-182 406-407 406-224 0-406-182-406-406s183-406 407-406c80 0 155 22 218 62l250-250 125 125z m-812 250l0 438 437 0 0-438-437 0z m62 375l313 0 0-312-313 0 0 312z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Pan" data-attr="dragmode" data-val="pan" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m1000 350l-187 188 0-125-250 0 0 250 125 0-188 187-187-187 125 0 0-250-250 0 0 125-188-188 186-187 0 125 252 0 0-250-125 0 187-188 188 188-125 0 0 250 250 0 0-126 187 188z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Box Select" data-attr="dragmode" data-val="select" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m0 850l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m285 0l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m-857-286l0-143 143 0 0 143-143 0z m857 0l0-143 143 0 0 143-143 0z m-857-285l0-143 143 0 0 143-143 0z m857 0l0-143 143 0 0 143-143 0z m-857-286l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m285 0l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Lasso Select" data-attr="dragmode" data-val="lasso" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1031 1000" class="icon" height="1em" width="1em"><path d="m1018 538c-36 207-290 336-568 286-277-48-473-256-436-463 10-57 36-108 76-151-13-66 11-137 68-183 34-28 75-41 114-42l-55-70 0 0c-2-1-3-2-4-3-10-14-8-34 5-45 14-11 34-8 45 4 1 1 2 3 2 5l0 0 113 140c16 11 31 24 45 40 4 3 6 7 8 11 48-3 100 0 151 9 278 48 473 255 436 462z m-624-379c-80 14-149 48-197 96 42 42 109 47 156 9 33-26 47-66 41-105z m-187-74c-19 16-33 37-39 60 50-32 109-55 174-68-42-25-95-24-135 8z m360 75c-34-7-69-9-102-8 8 62-16 128-68 170-73 59-175 54-244-5-9 20-16 40-20 61-28 159 121 317 333 354s407-60 434-217c28-159-121-318-333-355z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div><div class="modebar-group"><a rel="tooltip" class="modebar-btn" data-title="Zoom in" data-attr="zoom" data-val="in" data-toggle="false" data-gravity="n"><svg viewBox="0 0 875 1000" class="icon" height="1em" width="1em"><path d="m1 787l0-875 875 0 0 875-875 0z m687-500l-187 0 0-187-125 0 0 187-188 0 0 125 188 0 0 187 125 0 0-187 187 0 0-125z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Zoom out" data-attr="zoom" data-val="out" data-toggle="false" data-gravity="n"><svg viewBox="0 0 875 1000" class="icon" height="1em" width="1em"><path d="m0 788l0-876 875 0 0 876-875 0z m688-500l-500 0 0 125 500 0 0-125z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Autoscale" data-attr="zoom" data-val="auto" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m250 850l-187 0-63 0 0-62 0-188 63 0 0 188 187 0 0 62z m688 0l-188 0 0-62 188 0 0-188 62 0 0 188 0 62-62 0z m-875-938l0 188-63 0 0-188 0-62 63 0 187 0 0 62-187 0z m875 188l0-188-188 0 0-62 188 0 62 0 0 62 0 188-62 0z m-125 188l-1 0-93-94-156 156 156 156 92-93 2 0 0 250-250 0 0-2 93-92-156-156-156 156 94 92 0 2-250 0 0-250 0 0 93 93 157-156-157-156-93 94 0 0 0-250 250 0 0 0-94 93 156 157 156-157-93-93 0 0 250 0 0 250z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Reset axes" data-attr="zoom" data-val="reset" data-toggle="false" data-gravity="n"><svg viewBox="0 0 928.6 1000" class="icon" height="1em" width="1em"><path d="m786 296v-267q0-15-11-26t-25-10h-214v214h-143v-214h-214q-15 0-25 10t-11 26v267q0 1 0 2t0 2l321 264 321-264q1-1 1-4z m124 39l-34-41q-5-5-12-6h-2q-7 0-12 3l-386 322-386-322q-7-4-13-4-7 2-12 7l-35 41q-4 5-3 13t6 12l401 334q18 15 42 15t43-15l136-114v109q0 8 5 13t13 5h107q8 0 13-5t5-13v-227l122-102q5-5 6-12t-4-13z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div></div></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="463.333" height="320"><g class="hoverlayer"></g></svg></div></div></div></div>
+    <div class="chart-box" style="grid-column:1/-1"><div class="chart-title">⏱️ Aging — Tempo sem Resposta</div><div id="chart-aging" style="height:280px" class="js-plotly-plot"><div class="plot-container plotly"><div class="user-select-none svg-container" style="position: relative; width: 100%; height: 100%;"><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1510" height="280" style="background: white;"><defs id="defs-807065"><g class="clips"><clipPath id="clip807065xyplot" class="plotclip"><rect width="1460" height="230"></rect></clipPath><clipPath class="axesclip" id="clip807065x"><rect x="40" y="0" width="1460" height="280"></rect></clipPath><clipPath class="axesclip" id="clip807065y"><rect x="0" y="10" width="1510" height="230"></rect></clipPath><clipPath class="axesclip" id="clip807065xy"><rect x="40" y="10" width="1460" height="230"></rect></clipPath></g><g class="gradients"></g><g class="patterns"></g></defs><g class="bglayer"><rect class="bg" x="40" y="10" width="1460" height="230" style="fill: rgb(247, 250, 252); fill-opacity: 1; stroke-width: 0px;"></rect></g><g class="draglayer cursor-crosshair"><g class="xy"><rect class="nsewdrag drag" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="40" y="10" width="1460" height="230"></rect><rect class="nwdrag drag cursor-nw-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="20" y="-10" width="20" height="20"></rect><rect class="nedrag drag cursor-ne-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="1500" y="-10" width="20" height="20"></rect><rect class="swdrag drag cursor-sw-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="20" y="240" width="20" height="20"></rect><rect class="sedrag drag cursor-se-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="1500" y="240" width="20" height="20"></rect><rect class="ewdrag drag cursor-ew-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="186" y="240.5" width="1168" height="20"></rect><rect class="wdrag drag cursor-w-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="40" y="240.5" width="146" height="20"></rect><rect class="edrag drag cursor-e-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="1354" y="240.5" width="146" height="20"></rect><rect class="nsdrag drag cursor-ns-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="33" width="20" height="184"></rect><rect class="sdrag drag cursor-s-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="217" width="20" height="23"></rect><rect class="ndrag drag cursor-n-resize" style="fill: transparent; stroke-width: 0px; pointer-events: all;" data-subplot="xy" x="19.5" y="10" width="20" height="23"></rect></g></g><g class="layer-below"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="cartesianlayer"><g class="subplot xy"><g class="layer-subplot"><g class="shapelayer"></g><g class="imagelayer"></g></g><g class="minor-gridlayer"><g class="x"></g><g class="y"></g></g><g class="gridlayer"><g class="x"></g><g class="y"><path class="ygrid crisp" transform="translate(0,185.38)" d="M40,0h1460" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,130.75)" d="M40,0h1460" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,76.13)" d="M40,0h1460" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path><path class="ygrid crisp" transform="translate(0,21.5)" d="M40,0h1460" style="stroke: rgb(231, 233, 235); stroke-opacity: 1; stroke-width: 1px;"></path></g></g><g class="zerolinelayer"><path class="yzl zl crisp" transform="translate(0,240)" d="M40,0h1460" style="stroke: rgb(68, 68, 68); stroke-opacity: 1; stroke-width: 1px;"></path></g><path class="xlines-below"></path><path class="ylines-below"></path><g class="overlines-below"></g><g class="xaxislayer-below"></g><g class="yaxislayer-below"></g><g class="overaxes-below"></g><g class="plot" transform="translate(40,10)" clip-path="url(#clip807065xyplot)"><g class="barlayer mlayer"><g class="trace bars" style="opacity: 1;"><g class="points"><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(46, 204, 113); fill-opacity: 1;" d="M36.5,230V230H328.5V230Z"></path><text class="bartext bartext-outside" text-anchor="middle" data-notex="1" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" data-unformatted="0" data-math="N" x="0" y="0" transform="translate(182.49974060058594,223)">0</text></g><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(243, 156, 18); fill-opacity: 1;" d="M401.5,230V230H693.5V230Z"></path><text class="bartext bartext-outside" text-anchor="middle" data-notex="1" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" data-unformatted="0" data-math="N" x="0" y="0" transform="translate(547.4997406005859,223)">0</text></g><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(230, 126, 34); fill-opacity: 1;" d="M766.5,230V230H1058.5V230Z"></path><text class="bartext bartext-outside" text-anchor="middle" data-notex="1" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" data-unformatted="0" data-math="N" x="0" y="0" transform="translate(912.4997406005859,223)">0</text></g><g class="point"><path style="vector-effect: non-scaling-stroke; opacity: 1; stroke-width: 0px; fill: rgb(231, 76, 60); fill-opacity: 1;" d="M1131.5,230V11.5H1423.5V230Z"></path><text class="bartext bartext-outside" text-anchor="middle" data-notex="1" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre;" data-unformatted="4" data-math="N" x="0" y="0" transform="translate(1277.499740600586,4.5)">4</text></g></g></g></g></g><g class="overplot"></g><path class="xlines-above crisp" style="fill: none;" d="M0,0"></path><path class="ylines-above crisp" style="fill: none;" d="M0,0"></path><g class="overlines-above"></g><g class="xaxislayer-above"><g class="xtick"><text text-anchor="middle" x="0" y="253" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="0-2 dias" data-math="N" transform="translate(222.5,0)">0-2 dias</text></g><g class="xtick"><text text-anchor="middle" x="0" y="253" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="3-5 dias" data-math="N" transform="translate(587.5,0)">3-5 dias</text></g><g class="xtick"><text text-anchor="middle" x="0" y="253" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="6-7 dias" data-math="N" transform="translate(952.5,0)">6-7 dias</text></g><g class="xtick"><text text-anchor="middle" x="0" y="253" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="&gt;7 dias (vencido)" data-math="N" transform="translate(1317.5,0)">&gt;7 dias (vencido)</text></g></g><g class="yaxislayer-above"><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="0" data-math="N" transform="translate(0,240)">0</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="1" data-math="N" transform="translate(0,185.38)">1</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="2" data-math="N" transform="translate(0,130.75)">2</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="3" data-math="N" transform="translate(0,76.13)">3</text></g><g class="ytick"><text text-anchor="end" x="39" y="4.199999999999999" style="font-family: &quot;Open Sans&quot;, verdana, arial, sans-serif; font-size: 12px; fill: rgb(68, 68, 68); fill-opacity: 1; white-space: pre; opacity: 1;" data-unformatted="4" data-math="N" transform="translate(0,21.5)">4</text></g></g><g class="overaxes-above"></g></g></g><g class="polarlayer"></g><g class="smithlayer"></g><g class="ternarylayer"></g><g class="geolayer"></g><g class="funnelarealayer"></g><g class="pielayer"></g><g class="iciclelayer"></g><g class="treemaplayer"></g><g class="sunburstlayer"></g><g class="glimages"></g></svg><div class="gl-container"></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1510" height="280"><defs id="topdefs-807065"><g class="clips"></g></defs><g class="indicatorlayer"></g><g class="layer-above"><g class="imagelayer"></g><g class="shapelayer"></g></g><g class="selectionlayer"></g><g class="infolayer"><g class="g-gtitle"></g><g class="g-xtitle"></g><g class="g-ytitle"></g></g><g class="menulayer"></g><g class="zoomlayer"></g></svg><div class="modebar-container" style="position: absolute; top: 0px; right: 0px; width: 100%;"><div id="modebar-807065" class="modebar modebar--hover ease-bg"><div class="modebar-group"><a rel="tooltip" class="modebar-btn" data-title="Download plot as a png" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m500 450c-83 0-150-67-150-150 0-83 67-150 150-150 83 0 150 67 150 150 0 83-67 150-150 150z m400 150h-120c-16 0-34 13-39 29l-31 93c-6 15-23 28-40 28h-340c-16 0-34-13-39-28l-31-94c-6-15-23-28-40-28h-120c-55 0-100-45-100-100v-450c0-55 45-100 100-100h800c55 0 100 45 100 100v450c0 55-45 100-100 100z m-400-550c-138 0-250 112-250 250 0 138 112 250 250 250 138 0 250-112 250-250 0-138-112-250-250-250z m365 380c-19 0-35 16-35 35 0 19 16 35 35 35 19 0 35-16 35-35 0-19-16-35-35-35z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div><div class="modebar-group"><a rel="tooltip" class="modebar-btn active" data-title="Zoom" data-attr="dragmode" data-val="zoom" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m1000-25l-250 251c40 63 63 138 63 218 0 224-182 406-407 406-224 0-406-182-406-406s183-406 407-406c80 0 155 22 218 62l250-250 125 125z m-812 250l0 438 437 0 0-438-437 0z m62 375l313 0 0-312-313 0 0 312z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Pan" data-attr="dragmode" data-val="pan" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m1000 350l-187 188 0-125-250 0 0 250 125 0-188 187-187-187 125 0 0-250-250 0 0 125-188-188 186-187 0 125 252 0 0-250-125 0 187-188 188 188-125 0 0 250 250 0 0-126 187 188z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Box Select" data-attr="dragmode" data-val="select" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m0 850l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m285 0l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m-857-286l0-143 143 0 0 143-143 0z m857 0l0-143 143 0 0 143-143 0z m-857-285l0-143 143 0 0 143-143 0z m857 0l0-143 143 0 0 143-143 0z m-857-286l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z m285 0l0-143 143 0 0 143-143 0z m286 0l0-143 143 0 0 143-143 0z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Lasso Select" data-attr="dragmode" data-val="lasso" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1031 1000" class="icon" height="1em" width="1em"><path d="m1018 538c-36 207-290 336-568 286-277-48-473-256-436-463 10-57 36-108 76-151-13-66 11-137 68-183 34-28 75-41 114-42l-55-70 0 0c-2-1-3-2-4-3-10-14-8-34 5-45 14-11 34-8 45 4 1 1 2 3 2 5l0 0 113 140c16 11 31 24 45 40 4 3 6 7 8 11 48-3 100 0 151 9 278 48 473 255 436 462z m-624-379c-80 14-149 48-197 96 42 42 109 47 156 9 33-26 47-66 41-105z m-187-74c-19 16-33 37-39 60 50-32 109-55 174-68-42-25-95-24-135 8z m360 75c-34-7-69-9-102-8 8 62-16 128-68 170-73 59-175 54-244-5-9 20-16 40-20 61-28 159 121 317 333 354s407-60 434-217c28-159-121-318-333-355z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div><div class="modebar-group"><a rel="tooltip" class="modebar-btn" data-title="Zoom in" data-attr="zoom" data-val="in" data-toggle="false" data-gravity="n"><svg viewBox="0 0 875 1000" class="icon" height="1em" width="1em"><path d="m1 787l0-875 875 0 0 875-875 0z m687-500l-187 0 0-187-125 0 0 187-188 0 0 125 188 0 0 187 125 0 0-187 187 0 0-125z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Zoom out" data-attr="zoom" data-val="out" data-toggle="false" data-gravity="n"><svg viewBox="0 0 875 1000" class="icon" height="1em" width="1em"><path d="m0 788l0-876 875 0 0 876-875 0z m688-500l-500 0 0 125 500 0 0-125z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Autoscale" data-attr="zoom" data-val="auto" data-toggle="false" data-gravity="n"><svg viewBox="0 0 1000 1000" class="icon" height="1em" width="1em"><path d="m250 850l-187 0-63 0 0-62 0-188 63 0 0 188 187 0 0 62z m688 0l-188 0 0-62 188 0 0-188 62 0 0 188 0 62-62 0z m-875-938l0 188-63 0 0-188 0-62 63 0 187 0 0 62-187 0z m875 188l0-188-188 0 0-62 188 0 62 0 0 62 0 188-62 0z m-125 188l-1 0-93-94-156 156 156 156 92-93 2 0 0 250-250 0 0-2 93-92-156-156-156 156 94 92 0 2-250 0 0-250 0 0 93 93 157-156-157-156-93 94 0 0 0-250 250 0 0 0-94 93 156 157 156-157-93-93 0 0 250 0 0 250z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a><a rel="tooltip" class="modebar-btn" data-title="Reset axes" data-attr="zoom" data-val="reset" data-toggle="false" data-gravity="n"><svg viewBox="0 0 928.6 1000" class="icon" height="1em" width="1em"><path d="m786 296v-267q0-15-11-26t-25-10h-214v214h-143v-214h-214q-15 0-25 10t-11 26v267q0 1 0 2t0 2l321 264 321-264q1-1 1-4z m124 39l-34-41q-5-5-12-6h-2q-7 0-12 3l-386 322-386-322q-7-4-13-4-7 2-12 7l-35 41q-4 5-3 13t6 12l401 334q18 15 42 15t43-15l136-114v109q0 8 5 13t13 5h107q8 0 13-5t5-13v-227l122-102q5-5 6-12t-4-13z" transform="matrix(1 0 0 -1 0 850)"></path></svg></a></div></div></div><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1510" height="280"><g class="hoverlayer"></g></svg></div></div></div></div>
+  </div>
+</div>
+
+<!-- VIEW: REINCIDÊNCIA -->
+<div class="view" id="view-recurrence">
+  <div class="panel">
+    <div class="panel-title"><span class="panel-title-text">🎯 Reincidência por DA — Risk Score</span></div>
+    <p style="color:#5C7A99;font-size:12px;margin-bottom:15px">Score composto: Pacotes (30%) + Valor (25%) + Frequência (20%) + Alto Valor (15%) + Flags (10%)</p>
+    <div class="legend-box">
+      <div class="legend-item"><div class="legend-dot" style="background:#2ECC71"></div>Baixo (0-30)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F39C12"></div>Médio (31-60)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E67E22"></div>Alto (61-80)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E74C3C"></div>Crítico (81-100)</div>
+    </div>
+    <div class="table-wrap" style="margin-top:15px">
+      <table id="recurrenceTable">
+        <thead><tr><th>DA</th><th>Parceiro</th><th>Pacotes DNR</th><th>Valor Total</th><th>Alto Valor</th><th>Risk Score</th><th>Nível</th><th>Ação Recomendada</th></tr></thead>
+        <tbody id="recurrenceBody">
+    <tr>
+      <td><strong>Ana Lima</strong></td>
+      <td>EDSP Beta</td>
+      <td style="text-align:center">1</td>
+      <td>R$ 2.890,00</td>
+      <td style="text-align:center">1</td>
+      <td>
+        <div class="risk-gauge">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#E1E6ED" stroke-width="8"></circle>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#2ECC71" stroke-width="8" stroke-dasharray="25.632 213.6" stroke-linecap="round"></circle>
+          </svg>
+          <div class="risk-value" style="color:#2ECC71">12</div>
+        </div>
+      </td>
+      <td><span class="status-badge" style="background:#2ECC71;color:white">Baixo</span></td>
+      <td style="font-size:11px">Monitorar</td>
+    </tr>
+  
+    <tr>
+      <td><strong>Maria Santos</strong></td>
+      <td>EDSP Alpha</td>
+      <td style="text-align:center">1</td>
+      <td>R$ 1.250,00</td>
+      <td style="text-align:center">1</td>
+      <td>
+        <div class="risk-gauge">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#E1E6ED" stroke-width="8"></circle>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#2ECC71" stroke-width="8" stroke-dasharray="17.088 213.6" stroke-linecap="round"></circle>
+          </svg>
+          <div class="risk-value" style="color:#2ECC71">8</div>
+        </div>
+      </td>
+      <td><span class="status-badge" style="background:#2ECC71;color:white">Baixo</span></td>
+      <td style="font-size:11px">Monitorar</td>
+    </tr>
+  
+    <tr>
+      <td><strong>João Silva</strong></td>
+      <td>EDSP Alpha</td>
+      <td style="text-align:center">2</td>
+      <td>R$ 1.349,00</td>
+      <td style="text-align:center">0</td>
+      <td>
+        <div class="risk-gauge">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#E1E6ED" stroke-width="8"></circle>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#2ECC71" stroke-width="8" stroke-dasharray="14.952000000000002 213.6" stroke-linecap="round"></circle>
+          </svg>
+          <div class="risk-value" style="color:#2ECC71">7</div>
+        </div>
+      </td>
+      <td><span class="status-badge" style="background:#2ECC71;color:white">Baixo</span></td>
+      <td style="font-size:11px">Monitorar</td>
+    </tr>
+  
+    <tr>
+      <td><strong>Pedro Costa</strong></td>
+      <td>EDSP Beta</td>
+      <td style="text-align:center">1</td>
+      <td>R$ 89,90</td>
+      <td style="text-align:center">0</td>
+      <td>
+        <div class="risk-gauge">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#E1E6ED" stroke-width="8"></circle>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#2ECC71" stroke-width="8" stroke-dasharray="10.68 213.6" stroke-linecap="round"></circle>
+          </svg>
+          <div class="risk-value" style="color:#2ECC71">5</div>
+        </div>
+      </td>
+      <td><span class="status-badge" style="background:#2ECC71;color:white">Baixo</span></td>
+      <td style="font-size:11px">Monitorar</td>
+    </tr>
+  
+    <tr>
+      <td><strong>Carlos Rocha</strong></td>
+      <td>EDSP Alpha</td>
+      <td style="text-align:center">1</td>
+      <td>R$ 320,00</td>
+      <td style="text-align:center">0</td>
+      <td>
+        <div class="risk-gauge">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#E1E6ED" stroke-width="8"></circle>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#2ECC71" stroke-width="8" stroke-dasharray="6.408 213.6" stroke-linecap="round"></circle>
+          </svg>
+          <div class="risk-value" style="color:#2ECC71">3</div>
+        </div>
+      </td>
+      <td><span class="status-badge" style="background:#2ECC71;color:white">Baixo</span></td>
+      <td style="font-size:11px">Monitorar</td>
+    </tr>
+  </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: LOSS PREVENTION -->
+<div class="view" id="view-lp">
+  <div class="panel">
+    <div class="panel-title">
+      <span class="panel-title-text">🎯 Relatório Loss Prevention</span>
+      <button class="btn btn-warning btn-sm" onclick="exportLP()">📄 Exportar Excel LP</button>
+    </div>
+    <p style="color:#5C7A99;font-size:12px;margin-bottom:15px">Critério SOP: DAs com &gt;40 pacotes OU &gt;R$ 7.500 em 3 meses → Loss Prevention → Bloqueio</p>
+    <div class="table-wrap">
+      <table id="lpTable">
+        <thead><tr><th>DA</th><th>Parceiro</th><th>Station</th><th>Pacotes</th><th>Valor Total</th><th>Motivo LP</th><th>Ação</th></tr></thead>
+        <tbody id="lpBody"><tr><td colspan="7" style="text-align:center;padding:30px;color:#5C7A99">✅ Nenhum DA atingiu critério de Loss Prevention no momento</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: INFO -->
+<div class="view" id="view-info">
+  <div class="panel">
+    <div class="panel-title"><span class="panel-title-text">📚 Guia Rápido SOP DNR-EDSP</span></div>
+    <h3 style="margin:15px 0 10px 0;color:#2C5282">Responsabilidades por Justificativa</h3>
+    <table>
+      <thead><tr><th>Justificativa</th><th>Responsável</th></tr></thead>
+      <tbody>
+        <tr><td>No DSP response</td><td><span class="resp-badge resp-edsp">EDSP</span></td></tr>
+        <tr><td>Incorrect Delivery Location</td><td><span class="resp-badge resp-edsp">EDSP</span></td></tr>
+        <tr><td>Missing Recipient Details</td><td><span class="resp-badge resp-edsp">EDSP</span></td></tr>
+        <tr><td>Bad Actor</td><td><span class="resp-badge resp-edsp">EDSP</span></td></tr>
+        <tr><td>Tossing Package</td><td><span class="resp-badge resp-edsp">EDSP</span></td></tr>
+        <tr><td>DNR Over 30 Days</td><td><span class="resp-badge resp-amzl">AMZL</span></td></tr>
+        <tr><td>Comm. Expired</td><td><span class="resp-badge resp-amzl">AMZL</span></td></tr>
+        <tr><td>Incorrect Geolocation</td><td><span class="resp-badge resp-amzl">AMZL</span></td></tr>
+        <tr><td>Successful DSP Justification</td><td><span class="resp-badge resp-amzl">AMZL</span></td></tr>
+      </tbody>
+    </table>
+    <h3 style="margin:20px 0 10px 0;color:#2C5282">Prazos Críticos</h3>
+    <ul style="padding-left:20px;line-height:2">
+      <li><strong>7 dias corridos</strong> — Prazo máximo de retorno EDSP (item 7)</li>
+      <li><strong>2 dias corridos</strong> — Re-justificativa após devolução CTA (item 13)</li>
+      <li><strong>15 dias</strong> — Envio periódico para Loss Prevention (item 15)</li>
+      <li><strong>48h</strong> — Reflexo de bloqueio após offboard (item 15)</li>
+    </ul>
+    <h3 style="margin:20px 0 10px 0;color:#2C5282">Escalonamento por Reincidência (3 meses)</h3>
+    <table>
+      <thead><tr><th>Faixa</th><th>Ação</th></tr></thead>
+      <tbody>
+        <tr><td>1-20 pacotes ou ≤R$ 7.500</td><td>Treinamento</td></tr>
+        <tr><td>21-40 pacotes ou ≤R$ 7.500</td><td>Medida Disciplinar</td></tr>
+        <tr><td>&gt;40 pacotes ou &gt;R$ 7.500</td><td>Loss Prevention → Bloqueio</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+
+<!-- MODAL COMPARTILHAR -->
+<div class="modal" id="shareModal">
+  <div class="modal-content">
+    <h2 style="margin-bottom:5px">🔗 Compartilhar Plataforma</h2>
+    <p style="color:#5C7A99;font-size:13px">Escolha como quer distribuir os dados:</p>
+    <div class="share-grid">
+      <div class="share-option" onclick="exportHTML()">
+        <div class="share-icon">💾</div>
+        <div class="share-label">HTML Standalone</div>
+        <div class="share-desc">Arquivo completo com dados embutidos</div>
+      </div>
+      <div class="share-option" onclick="exportExcel()">
+        <div class="share-icon">📊</div>
+        <div class="share-label">Excel Completo</div>
+        <div class="share-desc">4 abas: Casos, Reincidência, LP, Critérios</div>
+      </div>
+      <div class="share-option" onclick="exportCSV()">
+        <div class="share-icon">📋</div>
+        <div class="share-label">CSV</div>
+        <div class="share-desc">Dados tabulares simples</div>
+      </div>
+      <div class="share-option" onclick="window.print()">
+        <div class="share-icon">🖨️</div>
+        <div class="share-label">Imprimir / PDF</div>
+        <div class="share-desc">Layout otimizado para impressão</div>
+      </div>
+      <div class="share-option" onclick="copySummary()">
+        <div class="share-icon">📝</div>
+        <div class="share-label">Copiar Resumo</div>
+        <div class="share-desc">Texto para Slack / e-mail</div>
+      </div>
+      <div class="share-option" onclick="emailReport()">
+        <div class="share-icon">📧</div>
+        <div class="share-label">Enviar por E-mail</div>
+        <div class="share-desc">Abre cliente de e-mail padrão</div>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:20px"><button class="btn btn-secondary" onclick="closeShareModal()">Fechar</button></div>
+  </div>
+</div>
+
+<script>
+// ============ DADOS ============
+let currentMode = 'cta'; // 'cta' ou 'partner'
+let expandedCases = new Set();
+
+const JUSTIFICATIONS = {
+  'No DSP response': 'EDSP',
+  'Incorrect Delivery Location': 'EDSP',
+  'Missing Recipient Details': 'EDSP',
+  'Bad Actor': 'EDSP',
+  'Tossing Package': 'EDSP',
+  'DNR Over 30 Days': 'AMZL',
+  'Comm. Expired': 'AMZL',
+  'Incorrect Geolocation': 'AMZL',
+  'Successful DSP Justification': 'AMZL'
+};
+
+// Dados de exemplo
+let D = [
+  {id:'c1', trackingId:'BR123456789', da:'João Silva', station:'DSP1', partner:'EDSP Alpha', date:'15/04/2025', value:450.00, asin:'Echo Dot 5', deliveryTo:'Cliente', geoScore:0.85, status:'waiting-edsp', justification:'', responsibility:'', edspResponse:{isDue:'',detail:'',actions:'',timestamp:'',images:[]}, ctaValidation:{geo:'',recipient:'',daNote:'',call:'',verdict:'',notes:'',timestamp:''}, timeline:[{time:'15/04/2025 10:30',event:'Caso criado — Aguardando resposta EDSP'}]},
+  {id:'c2', trackingId:'BR987654321', da:'Maria Santos', station:'DSP1', partner:'EDSP Alpha', date:'14/04/2025', value:1250.00, asin:'Fire TV Stick 4K', deliveryTo:'Recepção', geoScore:0.92, status:'waiting-cta', justification:'Incorrect Delivery Location', responsibility:'EDSP', edspResponse:{isDue:'Sim',detail:'Entrega realizada em endereço divergente',actions:'Reforço de treinamento ao DA',timestamp:'16/04/2025 14:20',images:[]}, ctaValidation:{geo:'',recipient:'',daNote:'',call:'',verdict:'',notes:'',timestamp:''}, timeline:[{time:'14/04/2025 09:00',event:'Caso criado'},{time:'16/04/2025 14:20',event:'EDSP respondeu'}]},
+  {id:'c3', trackingId:'BR555444333', da:'Pedro Costa', station:'DSP2', partner:'EDSP Beta', date:'10/04/2025', value:89.90, asin:'Livro', deliveryTo:'Cliente', geoScore:0.45, status:'done', justification:'Bad Actor', responsibility:'EDSP', edspResponse:{isDue:'Sim',detail:'DA confirmou comportamento inadequado',actions:'DA desligado',timestamp:'12/04/2025 11:00',images:[]}, ctaValidation:{geo:'nok',recipient:'nok',daNote:'nok',call:'ok',verdict:'NOK',notes:'Confirmado bad actor',timestamp:'13/04/2025 15:00'}, timeline:[{time:'10/04/2025 08:00',event:'Caso criado'},{time:'12/04/2025 11:00',event:'EDSP respondeu'},{time:'13/04/2025 15:00',event:'CTA validou — Finalizado'}]},
+  {id:'c4', trackingId:'BR111222333', da:'Ana Lima', station:'DSP3', partner:'EDSP Beta', date:'05/04/2025', value:2890.00, asin:'iPhone 15', deliveryTo:'Cliente', geoScore:0.30, status:'overdue', justification:'', responsibility:'', edspResponse:{isDue:'',detail:'',actions:'',timestamp:'',images:[]}, ctaValidation:{geo:'',recipient:'',daNote:'',call:'',verdict:'',notes:'',timestamp:''}, timeline:[{time:'05/04/2025 07:30',event:'Caso criado'}]},
+  {id:'c5', trackingId:'BR444555666', da:'Carlos Rocha', station:'DSP1', partner:'EDSP Alpha', date:'16/04/2025', value:320.00, asin:'Kindle', deliveryTo:'Vizinho', geoScore:0.88, status:'waiting-edsp', justification:'', responsibility:'', edspResponse:{isDue:'',detail:'',actions:'',timestamp:'',images:[]}, ctaValidation:{geo:'',recipient:'',daNote:'',call:'',verdict:'',notes:'',timestamp:''}, timeline:[{time:'16/04/2025 11:00',event:'Caso criado'}]},
+  {id:'c6', trackingId:'BR777888999', da:'João Silva', station:'DSP1', partner:'EDSP Alpha', date:'12/04/2025', value:899.00, asin:'Smart TV 43"', deliveryTo:'Cliente', geoScore:0.72, status:'done', justification:'Successful DSP Justification', responsibility:'AMZL', edspResponse:{isDue:'Não',detail:'Entrega comprovada com foto',actions:'N/A',timestamp:'14/04/2025 10:00',images:[]}, ctaValidation:{geo:'ok',recipient:'ok',daNote:'ok',call:'ok',verdict:'OK',notes:'Todos critérios atendidos',timestamp:'15/04/2025 09:00'}, timeline:[]}
+];
+
+// ============ UTILS ============
+const fmt = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const statusLabel = s => ({'waiting-edsp':'Aguardando EDSP','waiting-cta':'Aguardando CTA','done':'Finalizado','overdue':'Vencido'})[s] || s;
+const parseDate = d => { const p=d.split('/'); return new Date(p[2],p[1]-1,p[0]); };
+const daysSince = d => Math.floor((Date.now()-parseDate(d).getTime())/(1000*60*60*24));
+
+function notify(msg,type='success'){
+  const n=document.createElement('div');
+  n.className='notification';
+  n.style.borderLeftColor=type==='error'?'#E74C3C':type==='warning'?'#F39C12':'#2ECC71';
+  n.innerHTML=msg;
+  document.body.appendChild(n);
+  setTimeout(()=>n.remove(),3000);
+}
+
+// ============ MODO ============
+function toggleMode(){
+  currentMode = currentMode==='cta' ? 'partner' : 'cta';
+  document.body.classList.toggle('partner-mode', currentMode==='partner');
+  document.getElementById('mainHeader').classList.toggle('partner-mode', currentMode==='partner');
+  document.getElementById('modeBadge').textContent = currentMode==='cta' ? 'CTA Mode' : 'Parceiro EDSP';
+  if(currentMode==='partner' && document.getElementById('view-cases').classList.contains('active')===false){
+    showView('cases', document.querySelector('.tab'));
+  }
+  renderTable();
+  notify(currentMode==='cta'?'🔷 Modo CTA ativado':'🔶 Modo Parceiro EDSP ativado');
+}
+
+// ============ NAVEGAÇÃO ============
+function showView(id,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='dashboard') setTimeout(renderCharts,100);
+  if(id==='recurrence') renderRecurrence();
+  if(id==='lp') renderLP();
+}
+
+// ============ TABELA ============
+function renderTable(){
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const status = document.getElementById('filterStatus').value;
+  const partner = document.getElementById('filterPartner').value;
+  
+  // Atualizar filtro parceiros
+  const partnerSelect = document.getElementById('filterPartner');
+  const currentPartner = partnerSelect.value;
+  const partners = [...new Set(D.map(c=>c.partner))];
+  partnerSelect.innerHTML = '<option value="">Todos os parceiros</option>' + partners.map(p=>`<option value="${p}" ${p===currentPartner?'selected':''}>${p}</option>`).join('');
+
+  const filtered = D.filter(c=>{
+    if(search && !(c.trackingId.toLowerCase().includes(search)||c.da.toLowerCase().includes(search)||c.station.toLowerCase().includes(search))) return false;
+    if(status && c.status!==status) return false;
+    if(partner && c.partner!==partner) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('casesBody');
+  tbody.innerHTML = filtered.map(c=>{
+    const days = daysSince(c.date);
+    const overdueClass = days>7 && c.status!=='done' ? 'overdue' : '';
+    const isExpanded = expandedCases.has(c.id);
+    return `
+      <tr class="${overdueClass}">
+        <td><button class="expand-btn" onclick="toggleExpand('${c.id}')">${isExpanded?'▼':'▶'}</button></td>
+        <td><input class="editable" value="${c.trackingId}" onchange="updateField('${c.id}','trackingId',this.value)"></td>
+        <td><input class="editable" value="${c.da}" onchange="updateField('${c.id}','da',this.value)"></td>
+        <td><input class="editable" value="${c.station}" onchange="updateField('${c.id}','station',this.value)"></td>
+        <td><input class="editable" value="${c.partner}" onchange="updateField('${c.id}','partner',this.value)"></td>
+        <td><input class="editable" value="${c.date}" onchange="updateField('${c.id}','date',this.value)" style="width:90px"></td>
+        <td style="font-weight:600;color:${c.value>1000?'#E74C3C':'#2C3744'}">${fmt(c.value)}</td>
+        <td><span class="status-badge status-${c.status}">${statusLabel(c.status)}</span></td>
+        <td class="partner-hide">${c.justification||'<span style="color:#95A5A6">—</span>'}</td>
+        <td class="partner-hide">${c.responsibility?`<span class="resp-badge resp-${c.responsibility.toLowerCase()}">${c.responsibility}</span>`:'—'}</td>
+        <td style="text-align:center;font-weight:700;color:${days>7?'#E74C3C':days>5?'#F39C12':'#2ECC71'}">${days}d</td>
+        <td class="partner-hide"><button class="btn btn-sm btn-danger" onclick="deleteCase('${c.id}')">🗑️</button></td>
+      </tr>
+      ${isExpanded?`<tr class="detail-row"><td colspan="12"><div class="detail-content open">${renderDetail(c)}</div></td></tr>`:''}
+    `;
+  }).join('');
+
+  updateKPIs();
+}
+
+function renderDetail(c){
+  return `
+    <div class="detail-grid">
+      <!-- EDSP SECTION -->
+      <div class="detail-section section-edsp">
+        <div class="section-title">🔶 Resposta Parceiro EDSP</div>
+        <div class="form-row">
+          <label class="form-label">É DNR devido?</label>
+          <select class="form-select" onchange="updateEDSP('${c.id}','isDue',this.value)">
+            <option value="">Selecione...</option>
+            <option ${c.edspResponse.isDue==='Sim'?'selected':''}>Sim</option>
+            <option ${c.edspResponse.isDue==='Não'?'selected':''}>Não</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Detalhamento</label>
+          <textarea class="form-textarea" onchange="updateEDSP('${c.id}','detail',this.value)" placeholder="Descreva o que aconteceu...">${c.edspResponse.detail||''}</textarea>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Ações tomadas pela base</label>
+          <textarea class="form-textarea" onchange="updateEDSP('${c.id}','actions',this.value)" placeholder="Ex: treinamento, advertência, desligamento...">${c.edspResponse.actions||''}</textarea>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Evidências (imagens)</label>
+          <label class="upload-zone">
+            <input type="file" multiple accept="image/*" onchange="uploadImages('${c.id}',this.files)">
+            📎 Clique para anexar ou arraste imagens aqui
+          </label>
+          <div class="image-preview">${(c.edspResponse.images||[]).map(img=>`<img src="${img}" onclick="window.open('${img}')">`).join('')}</div>
+        </div>
+        <button class="btn btn-warning" onclick="submitEDSP('${c.id}')">✅ Enviar Resposta</button>
+        ${c.edspResponse.timestamp?`<div style="font-size:11px;color:#5C7A99;margin-top:8px">Enviado em: ${c.edspResponse.timestamp}</div>`:''}
+      </div>
+
+      <!-- CTA SECTION -->
+      <div class="detail-section section-cta partner-hide">
+        <div class="section-title">🔷 Validação CTA</div>
+        <div class="form-row">
+          <label class="form-label">Checklist SOP item 12</label>
+          <div class="check-grid">
+            ${['geo','recipient','daNote','call'].map(k=>{
+              const labels={geo:'Geolocalização',recipient:'Recebedor',daNote:'Nota DA',call:'Ligação'};
+              const v=c.ctaValidation[k];
+              return `<div class="check-item ${v}" onclick="toggleCheck('${c.id}','${k}')">${labels[k]} <strong>${v==='ok'?'✓ OK':v==='nok'?'✗ NOK':'—'}</strong></div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Justificativa (FlashRun)</label>
+          <select class="form-select" onchange="updateField('${c.id}','justification',this.value);updateResponsibility('${c.id}')">
+            <option value="">Selecione...</option>
+            ${Object.keys(JUSTIFICATIONS).map(j=>`<option ${c.justification===j?'selected':''}>${j}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Veredito Final</label>
+          <div class="check-grid">
+            <div class="check-item ${c.ctaValidation.verdict==='OK'?'ok':''}" onclick="setVerdict('${c.id}','OK')">OK <strong>${c.ctaValidation.verdict==='OK'?'✓':''}</strong></div>
+            <div class="check-item ${c.ctaValidation.verdict==='NOK'?'nok':''}" onclick="setVerdict('${c.id}','NOK')">NOK <strong>${c.ctaValidation.verdict==='NOK'?'✓':''}</strong></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Observações</label>
+          <textarea class="form-textarea" onchange="updateCTA('${c.id}','notes',this.value)">${c.ctaValidation.notes||''}</textarea>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-success" onclick="submitCTA('${c.id}')">✅ Finalizar Caso</button>
+          <button class="btn btn-warning" onclick="returnToEDSP('${c.id}')">↩️ Devolver EDSP (2d)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div style="margin-top:20px;background:white;padding:15px;border-radius:10px">
+      <div class="section-title" style="color:#2C3744">📜 Linha do Tempo</div>
+      <div class="timeline">
+        ${c.timeline.slice().reverse().map(t=>`<div class="timeline-item"><div class="timeline-time">${t.time}</div><div>${t.event}</div></div>`).join('')||'<div style="color:#95A5A6;font-size:12px">Sem eventos registrados</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function toggleExpand(id){
+  if(expandedCases.has(id)) expandedCases.delete(id);
+  else expandedCases.add(id);
+  renderTable();
+}
+
+function updateField(id,field,value){
+  const c = D.find(x=>x.id===id);
+  if(c){ c[field]=value; if(field==='justification') c.responsibility=JUSTIFICATIONS[value]||''; updateKPIs(); }
+}
+
+function updateEDSP(id,field,value){
+  const c = D.find(x=>x.id===id);
+  if(c) c.edspResponse[field]=value;
+}
+
+function updateCTA(id,field,value){
+  const c = D.find(x=>x.id===id);
+  if(c) c.ctaValidation[field]=value;
+}
+
+function updateResponsibility(id){
+  const c = D.find(x=>x.id===id);
+  if(c){ c.responsibility = JUSTIFICATIONS[c.justification]||''; renderTable(); }
+}
+
+function toggleCheck(id,field){
+  const c = D.find(x=>x.id===id);
+  if(!c) return;
+  const current = c.ctaValidation[field];
+  c.ctaValidation[field] = current==='ok' ? 'nok' : current==='nok' ? '' : 'ok';
+  renderTable();
+  expandedCases.add(id);
+  renderTable();
+}
+
+function setVerdict(id,v){
+  const c = D.find(x=>x.id===id);
+  if(c) c.ctaValidation.verdict = v;
+  renderTable();
+  expandedCases.add(id);
+  renderTable();
+}
+
+function uploadImages(id,files){
+  const c = D.find(x=>x.id===id);
+  if(!c) return;
+  [...files].forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = e => {
+      c.edspResponse.images = c.edspResponse.images||[];
+      c.edspResponse.images.push(e.target.result);
+      renderTable();
+      expandedCases.add(id);
+      renderTable();
+    };
+    reader.readAsDataURL(f);
+  });
+  notify('📎 '+files.length+' imagem(ns) anexada(s)');
+}
+
+function submitEDSP(id){
+  const c = D.find(x=>x.id===id);
+  if(!c) return;
+  const now = new Date().toLocaleString('pt-BR');
+  c.edspResponse.timestamp = now;
+  c.status = 'waiting-cta';
+  c.timeline.push({time:now, event:'✅ EDSP respondeu — Aguardando validação CTA'});
+  renderTable();
+  expandedCases.add(id);
+  renderTable();
+  notify('✅ Resposta EDSP enviada');
+}
+
+function submitCTA(id){
+  const c = D.find(x=>x.id===id);
+  if(!c) return;
+  const now = new Date().toLocaleString('pt-BR');
+  c.ctaValidation.timestamp = now;
+  c.status = 'done';
+  c.timeline.push({time:now, event:'✅ CTA validou — Caso FINALIZADO'});
+  renderTable();
+  expandedCases.add(id);
+  renderTable();
+  notify('✅ Caso finalizado');
+}
+
+function returnToEDSP(id){
+  const c = D.find(x=>x.id===id);
+  if(!c) return;
+  const now = new Date().toLocaleString('pt-BR');
+  c.status = 'waiting-edsp';
+  c.timeline.push({time:now, event:'↩️ CTA devolveu ao EDSP — Prazo 2 dias (SOP item 13)'});
+  renderTable();
+  expandedCases.add(id);
+  renderTable();
+  notify('↩️ Caso devolvido ao EDSP','warning');
+}
+
+function addCase(){
+  const newId = 'c'+Date.now();
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('pt-BR');
+  D.unshift({
+    id:newId, trackingId:'NOVO-'+Math.floor(Math.random()*9999), da:'(preencher)', station:'(preencher)', partner:'(preencher)',
+    date:dateStr, value:0, asin:'', deliveryTo:'Cliente', geoScore:0,
+    status:'waiting-edsp', justification:'', responsibility:'',
+    edspResponse:{isDue:'',detail:'',actions:'',timestamp:'',images:[]},
+    ctaValidation:{geo:'',recipient:'',daNote:'',call:'',verdict:'',notes:'',timestamp:''},
+    timeline:[{time:now.toLocaleString('pt-BR'),event:'Caso criado manualmente'}]
+  });
+  expandedCases.add(newId);
+  renderTable();
+  notify('➕ Novo caso adicionado');
+}
+
+function deleteCase(id){
+  if(!confirm('Excluir este caso?')) return;
+  D = D.filter(c=>c.id!==id);
+  renderTable();
+  notify('🗑️ Caso excluído','warning');
+}
+
+// ============ KPIs ============
+function updateKPIs(){
+  document.getElementById('kpi-total').textContent = D.length;
+  document.getElementById('kpi-waiting').textContent = D.filter(c=>c.status==='waiting-edsp').length;
+  document.getElementById('kpi-done').textContent = D.filter(c=>c.status==='done').length;
+  document.getElementById('kpi-overdue').textContent = D.filter(c=>daysSince(c.date)>7 && c.status!=='done').length;
+  document.getElementById('kpi-value').textContent = fmt(D.reduce((s,c)=>s+c.value,0));
+}
+
+// ============ CHARTS ============
+function renderCharts(){
+  // Weekly evolution
+  const byWeek = {};
+  D.forEach(c=>{
+    const d = parseDate(c.date);
+    const week = 'Sem '+Math.ceil(d.getDate()/7);
+    byWeek[week] = (byWeek[week]||0)+1;
+  });
+  Plotly.newPlot('chart-weekly',[{x:Object.keys(byWeek),y:Object.values(byWeek),type:'bar',marker:{color:'#2C5282'}}],{margin:{t:10,r:10,b:40,l:40},paper_bgcolor:'white',plot_bgcolor:'#F7FAFC'},{responsive:true,displaylogo:false});
+
+  // Justification
+  const byJust = {};
+  D.filter(c=>c.justification).forEach(c=>{ byJust[c.justification]=(byJust[c.justification]||0)+1; });
+  if(Object.keys(byJust).length){
+    Plotly.newPlot('chart-justification',[{labels:Object.keys(byJust),values:Object.values(byJust),type:'pie',hole:0.5,marker:{colors:['#2C5282','#DD6B20','#E74C3C','#2ECC71','#9B59B6','#F39C12','#16A085','#34495E','#E67E22']}}],{margin:{t:10,r:10,b:10,l:10},showlegend:true,legend:{orientation:'v',x:1,y:0.5,font:{size:10}}},{responsive:true,displaylogo:false});
+  }
+
+  // Responsibility
+  const edsp = D.filter(c=>c.responsibility==='EDSP').length;
+  const amzl = D.filter(c=>c.responsibility==='AMZL').length;
+  Plotly.newPlot('chart-responsibility',[{x:['EDSP','AMZL'],y:[edsp,amzl],type:'bar',marker:{color:['#DD6B20','#2C5282']},text:[edsp,amzl],textposition:'outside'}],{margin:{t:10,r:10,b:40,l:40},paper_bgcolor:'white',plot_bgcolor:'#F7FAFC'},{responsive:true,displaylogo:false});
+
+  // By Partner
+  const byPartner = {};
+  D.forEach(c=>{ byPartner[c.partner]=(byPartner[c.partner]||0)+1; });
+  Plotly.newPlot('chart-partner',[{x:Object.keys(byPartner),y:Object.values(byPartner),type:'bar',marker:{color:'#9B59B6'}}],{margin:{t:10,r:10,b:60,l:40},paper_bgcolor:'white',plot_bgcolor:'#F7FAFC'},{responsive:true,displaylogo:false});
+
+  // Aging
+  const aging = {'0-2 dias':0,'3-5 dias':0,'6-7 dias':0,'>7 dias (vencido)':0};
+  D.filter(c=>c.status!=='done').forEach(c=>{
+    const d = daysSince(c.date);
+    if(d<=2) aging['0-2 dias']++;
+    else if(d<=5) aging['3-5 dias']++;
+    else if(d<=7) aging['6-7 dias']++;
+    else aging['>7 dias (vencido)']++;
+  });
+  Plotly.newPlot('chart-aging',[{x:Object.keys(aging),y:Object.values(aging),type:'bar',marker:{color:['#2ECC71','#F39C12','#E67E22','#E74C3C']},text:Object.values(aging),textposition:'outside'}],{margin:{t:10,r:10,b:40,l:40},paper_bgcolor:'white',plot_bgcolor:'#F7FAFC'},{responsive:true,displaylogo:false});
+}
+
+// ============ REINCIDÊNCIA & RISK SCORE ============
+function calcRiskScore(daCases){
+  const pkg = daCases.length;
+  const totalValue = daCases.reduce((s,c)=>s+c.value,0);
+  const highValue = daCases.filter(c=>c.value>1000).length;
+  const flags = daCases.filter(c=>c.justification==='Bad Actor'||c.justification==='Tossing Package').length;
+  
+  const sPkg = Math.min(100, pkg*3) * 0.3;
+  const sVal = Math.min(100, totalValue/100) * 0.25;
+  const sFreq = Math.min(100, pkg*5) * 0.2;
+  const sHigh = Math.min(100, highValue*20) * 0.15;
+  const sFlag = Math.min(100, flags*30) * 0.1;
+  
+  return Math.round(sPkg+sVal+sFreq+sHigh+sFlag);
+}
+
+function renderRecurrence(){
+  const byDA = {};
+  D.forEach(c=>{
+    if(!byDA[c.da]) byDA[c.da] = {cases:[],partner:c.partner};
+    byDA[c.da].cases.push(c);
+  });
+  
+  const rows = Object.entries(byDA).map(([da,info])=>{
+    const score = calcRiskScore(info.cases);
+    const totalValue = info.cases.reduce((s,c)=>s+c.value,0);
+    const highValue = info.cases.filter(c=>c.value>1000).length;
+    let level, color, action;
+    if(score<=30){level='Baixo';color='#2ECC71';action='Monitorar'}
+    else if(score<=60){level='Médio';color='#F39C12';action='Treinamento recomendado'}
+    else if(score<=80){level='Alto';color='#E67E22';action='Medida disciplinar'}
+    else {level='Crítico';color='#E74C3C';action='Loss Prevention → Bloqueio'}
+    
+    return {da,partner:info.partner,pkg:info.cases.length,value:totalValue,highValue,score,level,color,action};
+  }).sort((a,b)=>b.score-a.score);
+
+  document.getElementById('recurrenceBody').innerHTML = rows.map(r=>`
+    <tr>
+      <td><strong>${r.da}</strong></td>
+      <td>${r.partner}</td>
+      <td style="text-align:center">${r.pkg}</td>
+      <td>${fmt(r.value)}</td>
+      <td style="text-align:center">${r.highValue}</td>
+      <td>
+        <div class="risk-gauge">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#E1E6ED" stroke-width="8"/>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="${r.color}" stroke-width="8" stroke-dasharray="${r.score*2.136} 213.6" stroke-linecap="round"/>
+          </svg>
+          <div class="risk-value" style="color:${r.color}">${r.score}</div>
+        </div>
+      </td>
+      <td><span class="status-badge" style="background:${r.color};color:white">${r.level}</span></td>
+      <td style="font-size:11px">${r.action}</td>
+    </tr>
+  `).join('');
+}
+
+// ============ LOSS PREVENTION ============
+function renderLP(){
+  const byDA = {};
+  D.forEach(c=>{
+    if(!byDA[c.da]) byDA[c.da] = {cases:[],partner:c.partner,station:c.station};
+    byDA[c.da].cases.push(c);
+  });
+  
+  const lpRows = Object.entries(byDA).filter(([_,info])=>{
+    const total = info.cases.reduce((s,c)=>s+c.value,0);
+    return info.cases.length>40 || total>7500;
+  }).map(([da,info])=>{
+    const total = info.cases.reduce((s,c)=>s+c.value,0);
+    const reasons = [];
+    if(info.cases.length>40) reasons.push('>40 pacotes');
+    if(total>7500) reasons.push('>R$ 7.500');
+    return {da,partner:info.partner,station:info.station,pkg:info.cases.length,value:total,reasons:reasons.join(' + ')};
+  });
+
+  const tbody = document.getElementById('lpBody');
+  if(lpRows.length===0){
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:#5C7A99">✅ Nenhum DA atingiu critério de Loss Prevention no momento</td></tr>`;
+  } else {
+    tbody.innerHTML = lpRows.map(r=>`
+      <tr style="background:#FEE2E2">
+        <td><strong>${r.da}</strong></td>
+        <td>${r.partner}</td>
+        <td>${r.station}</td>
+        <td style="text-align:center;font-weight:700;color:#E74C3C">${r.pkg}</td>
+        <td style="font-weight:700;color:#E74C3C">${fmt(r.value)}</td>
+        <td>${r.reasons}</td>
+        <td><span class="status-badge status-overdue">BLOQUEIO</span></td>
+      </tr>
+    `).join('');
+  }
+}
+
+// ============ IMPORTAÇÃO ============
+function importFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try{
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data,{type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+      let imported = 0, skipped = 0;
+      rows.forEach(r=>{
+        // SOP item 5: excluir Abuse=Yes e OTP=Yes
+        if((r.Abuse||'').toString().toLowerCase()==='yes' || (r.OTP||'').toString().toLowerCase()==='yes'){
+          skipped++;
+          return;
+        }
+        D.push({
+          id:'c'+Date.now()+Math.random(),
+          trackingId:r['Tracking ID']||r.TrackingId||'',
+          da:r.DA||r.Driver||'',
+          station:r.Station||'',
+          partner:r.Partner||r.EDSP||'',
+          date:r.Date||new Date().toLocaleDateString('pt-BR'),
+          value:parseFloat(r.Value||r.Valor||0),
+          asin:r.ASIN||r['ASIN Name']||'',
+          deliveryTo:r.DeliveryTo||'Cliente',
+          geoScore:parseFloat(r.GeoScore||0),
+          status:'waiting-edsp',
+          justification:'', responsibility:'',
+          edspResponse:{isDue:'',detail:'',actions:'',timestamp:'',images:[]},
+          ctaValidation:{geo:'',recipient:'',daNote:'',call:'',verdict:'',notes:'',timestamp:''},
+          timeline:[{time:new Date().toLocaleString('pt-BR'),event:'Importado do FlashRun'}]
+        });
+        imported++;
+      });
+      renderTable();
+      notify(`✅ ${imported} casos importados. ${skipped} excluídos (Abuse/OTP).`);
+    }catch(err){
+      notify('❌ Erro na importação: '+err.message,'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ============ EXPORTAÇÃO ============
+function openShareModal(){ document.getElementById('shareModal').classList.add('active'); }
+function closeShareModal(){ document.getElementById('shareModal').classList.remove('active'); }
+
+function exportExcel(){
+  const wb = XLSX.utils.book_new();
+  
+  // Aba 1: Casos
+  const casesData = D.map(c=>({
+    'Tracking ID':c.trackingId, 'DA':c.da, 'Station':c.station, 'Parceiro':c.partner,
+    'Data':c.date, 'Valor':c.value, 'ASIN':c.asin, 'Status':statusLabel(c.status),
+    'Justificativa':c.justification, 'Responsabilidade':c.responsibility,
+    'Dias sem resposta':daysSince(c.date),
+    'EDSP Devido':c.edspResponse.isDue, 'EDSP Detalhe':c.edspResponse.detail,
+    'EDSP Ações':c.edspResponse.actions, 'EDSP Timestamp':c.edspResponse.timestamp,
+    'CTA Veredito':c.ctaValidation.verdict, 'CTA Observações':c.ctaValidation.notes,
+    'CTA Timestamp':c.ctaValidation.timestamp
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(casesData), 'Casos DNR');
+  
+  // Aba 2: Reincidência
+  const byDA = {};
+  D.forEach(c=>{ if(!byDA[c.da]) byDA[c.da]={cases:[],partner:c.partner}; byDA[c.da].cases.push(c); });
+  const recData = Object.entries(byDA).map(([da,info])=>{
+    const score = calcRiskScore(info.cases);
+    return {
+      'DA':da, 'Parceiro':info.partner, 'Pacotes':info.cases.length,
+      'Valor Total':info.cases.reduce((s,c)=>s+c.value,0),
+      'Risk Score':score,
+      'Nível':score<=30?'Baixo':score<=60?'Médio':score<=80?'Alto':'Crítico'
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recData), 'Reincidência');
+  
+  // Aba 3: LP
+  const lpData = Object.entries(byDA).filter(([_,info])=>{
+    const t = info.cases.reduce((s,c)=>s+c.value,0);
+    return info.cases.length>40 || t>7500;
+  }).map(([da,info])=>({
+    'DA':da, 'Parceiro':info.partner, 'Pacotes':info.cases.length,
+    'Valor Total':info.cases.reduce((s,c)=>s+c.value,0), 'Ação':'Loss Prevention'
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lpData.length?lpData:[{info:'Nenhum caso LP'}]), 'Loss Prevention');
+  
+  // Aba 4: Critérios SOP
+  const sopData = Object.entries(JUSTIFICATIONS).map(([j,r])=>({'Justificativa':j,'Responsabilidade':r}));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sopData), 'Critérios SOP');
+  
+  XLSX.writeFile(wb, `DNR_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+  notify('📊 Excel exportado com 4 abas');
+  closeShareModal();
+}
+
+function exportCSV(){
+  const headers = ['Tracking ID','DA','Station','Parceiro','Data','Valor','Status','Justificativa','Responsabilidade','Dias'];
+  const rows = D.map(c=>[c.trackingId,c.da,c.station,c.partner,c.date,c.value,statusLabel(c.status),c.justification,c.responsibility,daysSince(c.date)]);
+  const csv = [headers, ...rows].map(r=>r.map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `DNR_${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+  notify('📋 CSV exportado');
+  closeShareModal();
+}
+
+function exportHTML(){
+  const clone = document.documentElement.cloneNode(true);
+  // Remove modal
+  const modal = clone.querySelector('#shareModal'); if(modal) modal.remove();
+  // Injetar dados atuais
+  const script = clone.querySelector('script');
+  const html = '<!DOCTYPE html>\n'+clone.outerHTML;
+  const blob = new Blob([html],{type:'text/html;charset=utf-8'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `DNR_Dashboard_${new Date().toISOString().slice(0,10)}.html`;
+  link.click();
+  notify('💾 HTML standalone exportado');
+  closeShareModal();
+}
+
+function exportLP(){
+  const byDA = {};
+  D.forEach(c=>{ if(!byDA[c.da]) byDA[c.da]={cases:[],partner:c.partner,station:c.station}; byDA[c.da].cases.push(c); });
+  const rows = Object.entries(byDA).filter(([_,info])=>{
+    const t = info.cases.reduce((s,c)=>s+c.value,0);
+    return info.cases.length>40 || t>7500;
+  }).map(([da,info])=>({
+    'DA':da, 'Parceiro':info.partner, 'Station':info.station,
+    'Pacotes DNR':info.cases.length, 'Valor Total':info.cases.reduce((s,c)=>s+c.value,0),
+    'Tracking IDs':info.cases.map(c=>c.trackingId).join('; '),
+    'Ação Requerida':'Bloqueio via Loss Prevention'
+  }));
+  if(rows.length===0){ notify('Nenhum caso atinge critério LP','warning'); return; }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Loss Prevention');
+  XLSX.writeFile(wb, `LP_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+  notify('📄 Relatório LP exportado');
+}
+
+function copySummary(){
+  const total = D.length;
+  const waiting = D.filter(c=>c.status==='waiting-edsp').length;
+  const done = D.filter(c=>c.status==='done').length;
+  const overdue = D.filter(c=>daysSince(c.date)>7 && c.status!=='done').length;
+  const value = D.reduce((s,c)=>s+c.value,0);
+  const text = `📊 *DNR Control Center — Resumo*\n\n📦 Total de casos: ${total}\n⏳ Aguardando EDSP: ${waiting}\n✅ Finalizados: ${done}\n🚨 Vencidos (>7d): ${overdue}\n💰 Valor total: ${fmt(value)}\n\n_Gerado em ${new Date().toLocaleString('pt-BR')}_`;
+  navigator.clipboard.writeText(text).then(()=>{
+    notify('📋 Resumo copiado para área de transferência');
+    closeShareModal();
+  });
+}
+
+function emailReport(){
+  const total = D.length;
+  const waiting = D.filter(c=>c.status==='waiting-edsp').length;
+  const done = D.filter(c=>c.status==='done').length;
+  const overdue = D.filter(c=>daysSince(c.date)>7 && c.status!=='done').length;
+  const body = `DNR Control Center - Relatório\n\nTotal: ${total}\nAguardando EDSP: ${waiting}\nFinalizados: ${done}\nVencidos: ${overdue}\n\nGerado em ${new Date().toLocaleString('pt-BR')}`;
+  window.location.href = `mailto:?subject=DNR Report ${new Date().toLocaleDateString('pt-BR')}&body=${encodeURIComponent(body)}`;
+  closeShareModal();
+}
+
+// ============ INIT ============
+renderTable();
+</script>
+
+<!-- DATA SOURCES & ASSUMPTIONS -->
+
+
+<!-- STANDARD CONTROL BUTTONS -->
+<div id="viz-controls" style="position:fixed;bottom:15px;right:15px;z-index:9999;display:flex;gap:8px">
+  <button id="export-html-btn" class="viz-btn" title="Export as HTML">💾 Export</button>
+  <button id="fs-btn" class="viz-btn" title="Fullscreen">✕</button>
+</div>
+<style>
+.viz-btn{background:white;border:2px solid #4A90E2;color:#4A90E2;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.1);transition:all 0.2s}
+.viz-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+#export-html-btn{background:#2ECC71;border-color:#27AE60;color:white}
+#export-html-btn:hover{background:#27AE60}
+</style>
+<script>
+(function(){
+  document.getElementById('export-html-btn').addEventListener('click',function(){
+    try{
+      var htmlClone=document.documentElement.cloneNode(true);
+      var assumptions=htmlClone.querySelector('details[style*="FFF3CD"]');
+      if(assumptions)assumptions.remove();
+      var htmlContent='<!DOCTYPE html>\n'+htmlClone.outerHTML;
+      var blob=new Blob([htmlContent],{type:'text/html;charset=utf-8'});
+      var filename='dnr_control_center_'+new Date().toISOString().slice(0,10)+'.html';
+      var link=document.createElement('a');
+      link.href=URL.createObjectURL(blob);
+      link.download=filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      var btn=this;
+      var originalText=btn.innerHTML;
+      btn.innerHTML='✓ Saved!';
+      setTimeout(function(){btn.innerHTML=originalText;},2000);
+    }catch(err){console.error('Export error:',err);alert('Export failed: '+err.message);}
+  });
+  document.getElementById('fs-btn').addEventListener('click',function(){
+    if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(e=>console.error(e));}
+    else{document.exitFullscreen();}
+  });
+  document.addEventListener('fullscreenchange',function(){
+    document.getElementById('fs-btn').textContent=document.fullscreenElement?'✕':'⛶';
+  });
+})();
+</script>
+
+
+<svg id="js-plotly-tester" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="position: absolute; left: -10000px; top: -10000px; width: 9000px; height: 9000px; z-index: 1;"><path class="js-reference-point" d="M0,0H1V1H0Z" style="stroke-width: 0px; fill: black;"></path></svg></body></html>
