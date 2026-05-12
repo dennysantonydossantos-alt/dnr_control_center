@@ -1,0 +1,16 @@
+# 📁 Pasta de Dados
+
+⚠️ **ATENÇÃO:** Esta pasta NUNCA deve conter dados reais.
+
+## O que pode ficar aqui
+- ✅ Templates vazios (`template_flashrun.xlsx`)
+- ✅ Datasets sintéticos para teste
+- ✅ Exemplos anonimizados
+
+## O que NÃO pode ficar aqui
+- ❌ Tracking IDs reais
+- ❌ Nomes reais de DAs
+- ❌ Valores financeiros reais Amazon
+- ❌ Dados de parceiros EDSP identificáveis
+
+Todos esses arquivos são bloqueados pelo `.gitignore`.

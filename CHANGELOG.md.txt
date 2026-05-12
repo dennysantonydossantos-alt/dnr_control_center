@@ -1,0 +1,24 @@
+# Changelog
+
+Todos os mudanças notáveis serão documentadas aqui.
+Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/)
+
+## [Unreleased]
+
+### Adicionado
+- Hospedagem em GitHub Pages
+- README.md profissional
+- Workflow de PR com branch protection
+
+## [1.0.0] - 2026-05-XX
+
+### Adicionado
+- Dashboard inicial com 6 casos de exemplo
+- Modo CTA + Modo Partner EDSP
+- 5 visualizações Plotly (Evolução, Justificativa, Responsabilidade, Parceiro, Aging)
+- Risk Score por DA
+- Detecção automática de Loss Prevention
+- Exportação Excel/CSV/HTML/PDF
+- Importação FlashRun com filtro Abuse=Yes/OTP=Yes (SOP item 5)
+- Linha do tempo por caso
+- Upload de evidências (imagens)
