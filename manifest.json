@@ -1,0 +1,36 @@
+{
+    "name": "DNR Control Center - EDSP Brasil",
+    "short_name": "DNR Center",
+    "description": "Dashboard de gestão de casos DNR para EDSP Brasil",
+    "start_url": "/dnr-control-center/",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#F0F2F5",
+    "theme_color": "#1E3A5F",
+    "categories": ["business", "productivity"],
+    "lang": "pt-BR",
+    "icons": [
+        {
+            "src": "icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Novo Caso",
+            "short_name": "Novo",
+            "description": "Adicionar novo caso DNR",
+            "url": "/dnr-control-center/?action=new",
+            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+        }
+    ]
+}
